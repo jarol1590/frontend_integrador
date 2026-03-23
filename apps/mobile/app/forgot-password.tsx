@@ -27,8 +27,7 @@ export default function ForgotPassword() {
             );
             return;
         }
-        console.log(`Enviar código via ${method} a:`, value);
-        
+        router.push(`/verify-code?flow=forgot` as any);
     };
 
     const handleSelectMethod = (selected: Method) => {
@@ -72,7 +71,7 @@ export default function ForgotPassword() {
                 </Text>
 
                 <View style={styles.card}>
-                  
+
                     {method === null && (
                         <>
                             <TouchableOpacity
@@ -109,7 +108,7 @@ export default function ForgotPassword() {
                         </>
                     )}
 
-                   
+
                     {method !== null && (
                         <>
                             <View style={styles.inputContainer}>
@@ -200,7 +199,7 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         padding: 25,
     },
-    
+
     optionButton: {
         flexDirection: "row",
         alignItems: "center",
@@ -234,7 +233,7 @@ const styles = StyleSheet.create({
         backgroundColor: "#ddd",
         marginVertical: 10,
     },
-    
+
     inputContainer: {
         flexDirection: "row",
         alignItems: "center",

@@ -12,26 +12,28 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { useLocalSearchParams } from "expo-router";
 
 export default function VerifyCode() {
     const [code, setCode] = useState(["", "", "", "", ""]);
     const inputs = useRef<(TextInput | null)[]>([]);
+    const { flow } = useLocalSearchParams<{ flow: "forgot" | "register" }>();
 
     const handleChange = (text: string, index: number) => {
-      
+
         const clean = text.replace(/[^0-9]/g, "");
         const newCode = [...code];
         newCode[index] = clean;
         setCode(newCode);
 
-        
+
         if (clean && index < 4) {
             inputs.current[index + 1]?.focus();
         }
     };
 
     const handleKeyPress = (e: any, index: number) => {
-        
+
         if (e.nativeEvent.key === "Backspace" && !code[index] && index > 0) {
             inputs.current[index - 1]?.focus();
         }
@@ -39,11 +41,14 @@ export default function VerifyCode() {
 
     const handleConfirm = () => {
         const fullCode = code.join("");
-        if (fullCode.length < 5) {
-            return;
+        if (fullCode.length < 5) return;
+        if (flow === "register") {
+            router.push("/dashboard" as any);
+        } else {
+            router.push("/new-password" as any); // pendiente
+            // por ahora para probar:
+             router.push("/dashboard" as any);
         }
-        console.log("Código ingresado:", fullCode);
-       
     };
 
     return (

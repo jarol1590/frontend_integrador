@@ -99,17 +99,10 @@ export default function Register() {
         else setStep(step - 1);
     };
 
-    const handleRegister = () => {
-        if (!password.trim() || password !== confirmPassword) return;
-        console.log("Registro completo:", {
-            nombres, apellidos, telefono,
-            correo, idType, idNumber, role,
-            nombreLugar, departamento, municipio,
-            direccion, latitud, longitud,
-            centroSeleccionado,
-        });
-        
-    };
+   const handleRegister = () => {
+    if (!password.trim() || password !== confirmPassword) return;
+    router.push("/verify-code?flow=register" as any);
+};
 
     const isLastStep =
         (role === "trabajador" && step === 3) ||

@@ -14,22 +14,16 @@ import { Ionicons } from "@expo/vector-icons";
 
 
 export default function Login() {
-  const handleForgotPassword = () => {
-    console.log("Ir a recuperar contraseña");
-
-
+  const handleLogin = () => {
+    router.push("/dashboard" as any);
   };
 
+  const handleForgotPassword = () => {
+    router.push("/forgot-password" as any);
+  };
 
   const handleRegister = () => {
-    console.log("Ir a registro");
-
-  };
-
-  const handleLogin = () => {
-    console.log("Login presionado");
-
-
+    router.push("/register" as any);
   };
 
   return (
