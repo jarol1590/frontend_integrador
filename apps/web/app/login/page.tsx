@@ -22,10 +22,8 @@ export default function LoginPage() {
     };
 
     const handleForgotPassword = () => {
-
-        console.log("Ir a recuperar contraseña");
+        router.push("/forgot-password");
     };
-
     return (
         <main className="min-h-screen flex flex-col md:flex-row">
 
