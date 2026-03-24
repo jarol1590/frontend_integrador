@@ -1,9 +1,5 @@
-import { View, Text } from "react-native";
+import { Redirect } from "expo-router";
 
 export default function Index() {
-  return (
-    <View>
-      <Text>Funciona 🎉</Text>
-    </View>
-  );
+  return <Redirect href={"/login" as any} />;
 }
