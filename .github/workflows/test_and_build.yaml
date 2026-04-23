@@ -22,6 +22,6 @@ jobs:
           cache: 'npm'
       - name: Install dependencies
         run: npm install
-      - name: Build and test mobile app
+      #- name: Build and test mobile app
       #  working-directory: ./apps/mobile
        # run: npx expo start --web --clear
