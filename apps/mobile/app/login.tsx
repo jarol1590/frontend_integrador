@@ -44,7 +44,7 @@ export default function Login() {
           />
         </View>
 
-        <Text style={styles.title}>BIENVENIDO!</Text>
+        <Text style={styles.title}>WELCOME TO THE JUNGLE</Text>
 
         <View style={styles.card}>
 
