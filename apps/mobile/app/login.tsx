@@ -34,6 +34,7 @@ export default function Login() {
         resizeMode="cover"
         imageStyle={{
           transform: [{ scale: 1.5 }],
+          opacity: 0.50
         }}
       />
       <View style={styles.container}>
@@ -46,73 +47,81 @@ export default function Login() {
 
         <Text style={styles.title}>BIENVENIDO!</Text>
 
-        <View style={styles.card}>
+       <View style={styles.card}>
 
-          <View style={styles.inputContainer}>
-            <Ionicons
-              name="mail-outline"
-              size={20}
-              color="#555"
-              style={{ marginRight: 10 }}
-            />
-            <TextInput
-              placeholder="Email"
-              style={styles.input}
-              placeholderTextColor="#666"
-            />
-          </View>
+  {/* 🔝 PARTE SUPERIOR */}
+  <View>
+    <View style={styles.inputContainer}>
+      <Ionicons
+        name="mail-outline"
+        size={20}
+        color="#555"
+        style={{ marginRight: 10 }}
+      />
+      <TextInput
+        placeholder="Email"
+        style={styles.input}
+        placeholderTextColor="#666"
+      />
+    </View>
 
-          <View style={styles.inputContainer}>
-            <Ionicons name="key-outline" size={20} color="#555" />
-            <TextInput
-              placeholder="Contraseña"
-              secureTextEntry
-              style={styles.input}
-              placeholderTextColor="#666"
-            />
-          </View>
-          <TouchableOpacity onPress={handleForgotPassword}>
-            <Text style={styles.forgot}>
-              Olvide mi contraseña
-            </Text>
-          </TouchableOpacity>
+    <View style={styles.inputContainer}>
+      <Ionicons name="key-outline" size={20} color="#555" />
+      <TextInput
+        placeholder="Contraseña"
+        secureTextEntry
+        style={styles.input}
+        placeholderTextColor="#666"
+      />
+    </View>
 
-          <Pressable
-            onPress={handleLogin}
-            style={({ pressed }) => [
-              styles.button,
-              {
-                transform: [
-                  { scale: pressed ? 0.95 : 1 },
-                  { translateY: pressed ? 2 : 0 }, // 👈 efecto “hundido”
-                ],
-                opacity: pressed ? 0.9 : 1,
-              },
-            ]}
-          >
-            <Text style={styles.buttonText}>
-              INGRESAR
-            </Text>
-          </Pressable>
+    <TouchableOpacity onPress={handleForgotPassword}>
+      <Text style={styles.forgot}>
+        Olvide mi contraseña
+      </Text>
+    </TouchableOpacity>
+  </View>
 
-          <View style={styles.registerContainer}>
-            <Text style={styles.register}>
-              Aun no tienes cuenta?{" "}
-            </Text>
+  {/* 🔽 PARTE INFERIOR */}
+  <View>
+    <Pressable
+      onPress={handleLogin}
+      style={({ pressed }) => [
+        styles.button,
+        {
+          transform: [
+            { scale: pressed ? 0.95 : 1 },
+            { translateY: pressed ? 2 : 0 },
+          ],
+          opacity: pressed ? 0.9 : 1,
+        },
+      ]}
+    >
+      <Text style={styles.buttonText}>
+        INGRESAR
+      </Text>
+    </Pressable>
 
-            <Pressable
-              onPress={handleRegister}
-              style={({ pressed }) => ({
-                transform: [{ scale: pressed ? 0.97 : 1 }],
-                opacity: pressed ? 0.5 : 1,
-              })}
-            >
-              <Text style={styles.registerLink}>
-                Registrate
-              </Text>
-            </Pressable>
-          </View>
-        </View>
+    <View style={styles.registerContainer}>
+      <Text style={styles.register}>
+        Aun no tienes cuenta?{" "}
+      </Text>
+
+      <Pressable
+        onPress={handleRegister}
+        style={({ pressed }) => ({
+          transform: [{ scale: pressed ? 0.97 : 1 }],
+          opacity: pressed ? 0.5 : 1,
+        })}
+      >
+        <Text style={styles.registerLink}>
+          Registrate
+        </Text>
+      </Pressable>
+    </View>
+  </View>
+
+</View>
       </View>
 
     </View>
@@ -131,11 +140,21 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   logoContainer: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: 170,
+    height: 170,
+    borderRadius: 100,
     overflow: "hidden",
     marginBottom: 20,
+
+    borderWidth: 2.2,        // grosor del borde
+   borderColor: "#000000", 
+
+    shadowColor: "#000000",
+    shadowOpacity: 0.9,
+    shadowRadius: 50,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 10,
+    
   },
   logo: {
     width: "100%",
@@ -146,12 +165,21 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 20,
   },
-  card: {
-    width: "100%",
-    backgroundColor: "rgba(255,255,255,0.9)",
-    borderRadius: 20,
-    padding: 25
-  },
+ card: {
+  width: "98%",
+  height: "58%",
+  backgroundColor: "rgba(255, 255, 255, 0.97)",
+  borderRadius: 30,
+  padding: 24,
+
+  paddingTop: 70, // 🔥 más espacio arriba
+  paddingBottom : 45,
+
+  borderWidth: 0.8,
+  borderColor: "#000000",
+
+  justifyContent: "space-between",
+},
   input: {
     flex: 1,
     fontSize: 16,
@@ -165,10 +193,10 @@ const styles = StyleSheet.create({
   },
   button: {
     backgroundColor: "#ccc",
-    paddingVertical: 16,
+    paddingVertical: 20,
     borderRadius: 20,
     alignItems: "center",
-    marginBottom: 15,
+    marginBottom: 20,
 
 
     elevation: 5,

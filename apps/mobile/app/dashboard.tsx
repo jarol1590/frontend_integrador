@@ -9,10 +9,25 @@ import {
     SafeAreaView,
     ImageBackground,
     Animated,
+    Modal,
+    TextInput,
+    FlatList,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { BarChart, PieChart } from "react-native-gifted-charts";
+import { Calendar, LocaleConfig } from "react-native-calendars";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+// ─── Configuración español ─────────────────────────────────
+LocaleConfig.locales["es"] = {
+    monthNames: ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"],
+    monthNamesShort: ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"],
+    dayNames: ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"],
+    dayNamesShort: ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"],
+    today: "Hoy",
+};
+LocaleConfig.defaultLocale = "es";
 
 // ─── Helpers ───────────────────────────────────────────────
 const randomInt = (min: number, max: number) =>
@@ -25,9 +40,7 @@ const generateMocks = () => {
     const currentMonth = new Date().getMonth();
     const quality = randomInt(20, 100);
     return {
-        user: {
-            name: userNames[randomInt(0, userNames.length - 1)],
-        },
+        user: { name: userNames[randomInt(0, userNames.length - 1)] },
         barData: months.slice(0, currentMonth + 1).map((label) => ({
             label,
             value: randomInt(40, 100),
@@ -49,7 +62,6 @@ const generateMocks = () => {
     };
 };
 
-// ─── Helpers de vaca ───────────────────────────────────────
 const getCowImage = (quality: number) => {
     if (quality >= 75) return require("../assets/images/CowHappy.png");
     if (quality >= 40) return require("../assets/images/CowNormal.png");
@@ -62,22 +74,69 @@ const getCowColor = (quality: number) => {
     return "#ff6b6b";
 };
 
-// ───────────────────────────────────────────────────────────
+// ─── Tipos ─────────────────────────────────────────────────
+type Event = {
+    id: string;
+    date: string;
+    type: string;
+    note: string;
+};
+
+// ─── Opciones de eventos ───────────────────────────────────
+const EVENT_OPTIONS = [
+    { label: "🐄 Ordeño", value: "Ordeño" },
+    { label: "💉 Vacunación", value: "Vacunación" },
+    { label: "🌿 Alimentación", value: "Alimentación" },
+    { label: "🧪 Análisis de calidad", value: "Análisis de calidad" },
+    { label: "🚛 Recolección", value: "Recolección" },
+    { label: "🔧 Mantenimiento", value: "Mantenimiento" },
+    { label: "👨‍⚕️ Visita veterinaria", value: "Visita veterinaria" },
+    { label: "📦 Entrega de insumos", value: "Entrega de insumos" },
+    { label: "📝 Otra tarea", value: "Otra tarea" },
+];
+
+const STORAGE_KEY = "lacticontrol_events";
 
 export default function Dashboard() {
     const [mocks, setMocks] = useState(generateMocks);
     const [selectedFarm, setSelectedFarm] = useState("1");
     const [activeTab, setActiveTab] = useState<"home" | "chat" | "user">("home");
 
+    // Vaca
     const fadeAnim = useRef(new Animated.Value(1)).current;
-    const [currentCow, setCurrentCow] = useState(() =>
-        getCowImage(mocks.milkStats.quality)
-    );
-    const [cowBorderColor, setCowBorderColor] = useState(() =>
-        getCowColor(mocks.milkStats.quality)
-    );
+    const [currentCow, setCurrentCow] = useState(() => getCowImage(mocks.milkStats.quality));
+    const [cowBorderColor, setCowBorderColor] = useState(() => getCowColor(mocks.milkStats.quality));
 
-    // Animación de vaca
+    // Calendario
+    const [events, setEvents] = useState<Event[]>([]);
+    const [selectedDate, setSelectedDate] = useState("");
+    const [modalVisible, setModalVisible] = useState(false);
+    const [selectedType, setSelectedType] = useState("");
+    const [note, setNote] = useState("");
+
+    // ─── Cargar eventos de AsyncStorage ───────────────────
+    useEffect(() => {
+        const loadEvents = async () => {
+            try {
+                const stored = await AsyncStorage.getItem(STORAGE_KEY);
+                if (stored) setEvents(JSON.parse(stored));
+            } catch (e) {
+                console.log("Error cargando eventos:", e);
+            }
+        };
+        loadEvents();
+    }, []);
+
+    // ─── Guardar eventos en AsyncStorage ──────────────────
+    const saveEvents = async (newEvents: Event[]) => {
+        try {
+            await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newEvents));
+        } catch (e) {
+            console.log("Error guardando eventos:", e);
+        }
+    };
+
+    // ─── Animación vaca ───────────────────────────────────
     const animateCow = (quality: number) => {
         setCowBorderColor(getCowColor(quality));
         Animated.timing(fadeAnim, {
@@ -94,16 +153,57 @@ export default function Dashboard() {
         });
     };
 
-    // Cada vez que cambian los mocks, animar la vaca
     useEffect(() => {
         animateCow(mocks.milkStats.quality);
     }, [mocks]);
 
-    // Regenerar todos los datos
     const refreshData = () => {
         setMocks(generateMocks());
         setSelectedFarm("1");
     };
+
+    // ─── Agregar evento ───────────────────────────────────
+    const handleAddEvent = async () => {
+        if (!selectedType) return;
+        const newEvent: Event = {
+            id: Date.now().toString(),
+            date: selectedDate,
+            type: selectedType,
+            note: note.trim(),
+        };
+        const updated = [...events, newEvent];
+        setEvents(updated);
+        await saveEvents(updated);
+        setModalVisible(false);
+        setSelectedType("");
+        setNote("");
+    };
+
+    // ─── Eliminar evento ──────────────────────────────────
+    const handleDeleteEvent = async (id: string) => {
+        const updated = events.filter((e) => e.id !== id);
+        setEvents(updated);
+        await saveEvents(updated);
+    };
+
+    // ─── Marcar días con eventos en el calendario ─────────
+    const markedDates: any = {};
+    events.forEach((e) => {
+        markedDates[e.date] = {
+            marked: true,
+            dotColor: "#6eaaff",
+        };
+    });
+    if (selectedDate) {
+        markedDates[selectedDate] = {
+            ...markedDates[selectedDate],
+            selected: true,
+            selectedColor: "#6eaaff",
+        };
+    }
+
+    // ─── Eventos del día seleccionado ─────────────────────
+    const eventsOfDay = events.filter((e) => e.date === selectedDate);
 
     const handleQR = () => router.push("/qr-scanner" as any);
     const handleNotifications = () => console.log("Notificaciones");
@@ -116,7 +216,8 @@ export default function Dashboard() {
                 style={StyleSheet.absoluteFillObject}
                 resizeMode="cover"
                 imageStyle={{
-                    transform: [{ scale: 1.5 }, { translateY: 285 }],
+                    transform: [{ scale: 1.2 }, { translateY: 285 }],  // 👈 de 1.5 a 1.2
+                    opacity: 0.2,  // 👈 manchas más sutiles
                 }}
             />
 
@@ -141,7 +242,7 @@ export default function Dashboard() {
                 </View>
             </View>
 
-            {/* CONTENIDO PRINCIPAL */}
+            {/* CONTENIDO */}
             <ScrollView
                 style={styles.scrollView}
                 contentContainerStyle={styles.scrollContent}
@@ -161,14 +262,11 @@ export default function Dashboard() {
                         source={currentCow}
                         style={[styles.cowImage, { opacity: fadeAnim }]}
                     />
-                    {/* Indicador de calidad */}
                     <View style={[styles.qualityBadge, { backgroundColor: cowBorderColor }]}>
                         <Text style={styles.qualityText}>
                             Calidad: {mocks.milkStats.quality}%
                         </Text>
                     </View>
-
-                    {/* Botón refrescar - para la expo */}
                     <TouchableOpacity style={styles.refreshBtn} onPress={refreshData}>
                         <Ionicons name="refresh-outline" size={18} color="#555" />
                         <Text style={styles.refreshText}>Actualizar datos</Text>
@@ -195,7 +293,7 @@ export default function Dashboard() {
                     />
                 </View>
 
-                {/* FINCAS + GRÁFICOS CIRCULARES */}
+                {/* FINCAS + GRÁFICOS */}
                 <View style={styles.bottomSection}>
                     <View style={styles.farmList}>
                         {mocks.farms.map((farm) => (
@@ -216,7 +314,6 @@ export default function Dashboard() {
                             </TouchableOpacity>
                         ))}
                     </View>
-
                     <View style={styles.statsCard}>
                         <Text style={styles.cardTitle}>Características</Text>
                         {mocks.milkStats.caracteristicas.map((stat) => (
@@ -241,6 +338,69 @@ export default function Dashboard() {
                         ))}
                     </View>
                 </View>
+
+                {/* CALENDARIO */}
+                <View style={styles.card}>
+                    <Text style={styles.cardTitle}>📅 Calendario de actividades</Text>
+                    <Calendar
+                        onDayPress={(day: any) => setSelectedDate(day.dateString)}
+                        markedDates={markedDates}
+                        theme={{
+                            backgroundColor: "transparent",
+                            calendarBackground: "transparent",
+                            textSectionTitleColor: "#555",
+                            selectedDayBackgroundColor: "#6eaaff",
+                            selectedDayTextColor: "#fff",
+                            todayTextColor: "#6eaaff",
+                            dayTextColor: "#333",
+                            dotColor: "#6eaaff",
+                            arrowColor: "#6eaaff",
+                            monthTextColor: "#222",
+                            textDayFontWeight: "500",
+                            textMonthFontWeight: "bold",
+                        }}
+                    />
+
+                    {/* Eventos del día seleccionado */}
+                    {selectedDate !== "" && (
+                        <View style={styles.dayEventsContainer}>
+                            <View style={styles.dayEventsHeader}>
+                                <Text style={styles.dayEventsTitle}>
+                                    {selectedDate}
+                                </Text>
+                                <TouchableOpacity
+                                    style={styles.addEventBtn}
+                                    onPress={() => setModalVisible(true)}
+                                >
+                                    <Ionicons name="add" size={18} color="#fff" />
+                                    <Text style={styles.addEventBtnText}>Agregar</Text>
+                                </TouchableOpacity>
+                            </View>
+
+                            {eventsOfDay.length === 0 ? (
+                                <Text style={styles.noEventsText}>
+                                    No hay actividades para este día
+                                </Text>
+                            ) : (
+                                eventsOfDay.map((ev) => (
+                                    <View key={ev.id} style={styles.eventItem}>
+                                        <View style={styles.eventInfo}>
+                                            <Text style={styles.eventType}>{ev.type}</Text>
+                                            {ev.note !== "" && (
+                                                <Text style={styles.eventNote}>{ev.note}</Text>
+                                            )}
+                                        </View>
+                                        <TouchableOpacity
+                                            onPress={() => handleDeleteEvent(ev.id)}
+                                        >
+                                            <Ionicons name="trash-outline" size={18} color="#ff6b6b" />
+                                        </TouchableOpacity>
+                                    </View>
+                                ))
+                            )}
+                        </View>
+                    )}
+                </View>
             </ScrollView>
 
             {/* BOTTOM TAB BAR */}
@@ -255,14 +415,12 @@ export default function Dashboard() {
                         Home
                     </Text>
                 </TouchableOpacity>
-
                 <TouchableOpacity style={styles.tabCenter} onPress={handleChat}>
                     <Image
                         source={require("../assets/images/CallCow.png")}
                         style={styles.tabCowImage}
                     />
                 </TouchableOpacity>
-
                 <TouchableOpacity style={styles.tabItem} onPress={() => setActiveTab("user")}>
                     <Ionicons
                         name={activeTab === "user" ? "person" : "person-outline"}
@@ -274,6 +432,74 @@ export default function Dashboard() {
                     </Text>
                 </TouchableOpacity>
             </View>
+
+            {/* MODAL AGREGAR EVENTO */}
+            <Modal
+                visible={modalVisible}
+                transparent
+                animationType="slide"
+                onRequestClose={() => setModalVisible(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalCard}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>Nueva actividad</Text>
+                            <TouchableOpacity onPress={() => setModalVisible(false)}>
+                                <Ionicons name="close" size={24} color="#555" />
+                            </TouchableOpacity>
+                        </View>
+
+                        <Text style={styles.modalSubtitle}>Selecciona el tipo:</Text>
+
+                        {/* Opciones de tipo */}
+                        <FlatList
+                            data={EVENT_OPTIONS}
+                            keyExtractor={(item) => item.value}
+                            numColumns={2}
+                            scrollEnabled={false}
+                            renderItem={({ item }) => (
+                                <TouchableOpacity
+                                    style={[
+                                        styles.optionChip,
+                                        selectedType === item.value && styles.optionChipSelected,
+                                    ]}
+                                    onPress={() => setSelectedType(item.value)}
+                                >
+                                    <Text style={[
+                                        styles.optionChipText,
+                                        selectedType === item.value && styles.optionChipTextSelected,
+                                    ]}>
+                                        {item.label}
+                                    </Text>
+                                </TouchableOpacity>
+                            )}
+                        />
+
+                        {/* Nota opcional */}
+                        <Text style={styles.modalSubtitle}>Nota (opcional):</Text>
+                        <TextInput
+                            style={styles.noteInput}
+                            placeholder="Ej: Ordeño de la mañana, finca norte..."
+                            placeholderTextColor="#aaa"
+                            value={note}
+                            onChangeText={setNote}
+                            multiline
+                        />
+
+                        {/* Botón guardar */}
+                        <TouchableOpacity
+                            style={[
+                                styles.saveBtn,
+                                !selectedType && { opacity: 0.5 },
+                            ]}
+                            onPress={handleAddEvent}
+                            disabled={!selectedType}
+                        >
+                            <Text style={styles.saveBtnText}>GUARDAR ACTIVIDAD</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 }
@@ -286,15 +512,11 @@ const styles = StyleSheet.create({
         alignItems: "center",
         paddingHorizontal: 20,
         paddingVertical: 15,
-        backgroundColor: "rgba(255,255,255,0.85)",
+        backgroundColor: "rgba(255,255,255,0.97)",  // 👈 de 0.85 a 0.97
         borderBottomLeftRadius: 20,
         borderBottomRightRadius: 20,
     },
-    headerLeft: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 12,
-    },
+    headerLeft: { flexDirection: "row", alignItems: "center", gap: 12 },
     avatarContainer: {
         width: 45,
         height: 45,
@@ -317,28 +539,14 @@ const styles = StyleSheet.create({
     scrollView: { flex: 1 },
     scrollContent: { padding: 16, gap: 16, paddingBottom: 30 },
     card: {
-        backgroundColor: "rgba(255,255,255,0.85)",
+        backgroundColor: "rgba(255,255,255,0.97)",  // 👈 de 0.85 a 0.97
         borderRadius: 20,
         padding: 16,
     },
     cardTitle: { fontSize: 14, fontWeight: "bold", color: "#333", marginBottom: 10 },
-    cowImage: {
-        width: 200,
-        height: 200,
-        resizeMode: "contain",
-        alignSelf: "center",
-    },
-    qualityBadge: {
-        marginTop: 8,
-        paddingHorizontal: 16,
-        paddingVertical: 6,
-        borderRadius: 12,
-    },
-    qualityText: {
-        fontWeight: "bold",
-        fontSize: 13,
-        color: "#333",
-    },
+    cowImage: { width: 200, height: 200, resizeMode: "contain", alignSelf: "center" },
+    qualityBadge: { marginTop: 8, paddingHorizontal: 16, paddingVertical: 6, borderRadius: 12 },
+    qualityText: { fontWeight: "bold", fontSize: 13, color: "#333" },
     refreshBtn: {
         flexDirection: "row",
         alignItems: "center",
@@ -353,7 +561,7 @@ const styles = StyleSheet.create({
     bottomSection: { flexDirection: "row", gap: 12 },
     farmList: { gap: 10, width: 100 },
     farmItem: {
-        backgroundColor: "rgba(255,255,255,0.85)",
+        backgroundColor: "rgba(255,255,255,0.97)",  // 👈 de 0.85 a 0.97
         borderRadius: 16,
         padding: 10,
         alignItems: "center",
@@ -375,7 +583,7 @@ const styles = StyleSheet.create({
     farmName: { fontSize: 11, textAlign: "center", color: "#444" },
     statsCard: {
         flex: 1,
-        backgroundColor: "rgba(255,255,255,0.85)",
+        backgroundColor: "rgba(255,255,255,0.97)",  // 👈 de 0.85 a 0.97
         borderRadius: 20,
         padding: 16,
         gap: 12,
@@ -384,6 +592,43 @@ const styles = StyleSheet.create({
     statName: { fontSize: 14, color: "#333", fontWeight: "500" },
     pieWrapper: { width: 56, height: 56, alignItems: "center", justifyContent: "center" },
     pieLabel: { fontSize: 10, fontWeight: "bold", color: "#333" },
+    // Calendario
+    dayEventsContainer: {
+        marginTop: 16,
+        borderTopWidth: 1,
+        borderTopColor: "#eee",
+        paddingTop: 12,
+        gap: 10,
+    },
+    dayEventsHeader: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+    },
+    dayEventsTitle: { fontSize: 13, fontWeight: "bold", color: "#333" },
+    addEventBtn: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 4,
+        backgroundColor: "#6eaaff",
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 12,
+    },
+    addEventBtnText: { color: "#fff", fontWeight: "bold", fontSize: 13 },
+    noEventsText: { fontSize: 13, color: "#aaa", textAlign: "center", paddingVertical: 8 },
+    eventItem: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        backgroundColor: "#f5f5f5",
+        borderRadius: 12,
+        padding: 10,
+    },
+    eventInfo: { flex: 1, gap: 2 },
+    eventType: { fontSize: 13, fontWeight: "bold", color: "#333" },
+    eventNote: { fontSize: 12, color: "#777" },
+    // Bottom bar
     bottomBar: {
         flexDirection: "row",
         backgroundColor: "rgba(255,255,255,0.95)",
@@ -419,4 +664,55 @@ const styles = StyleSheet.create({
         borderColor: "#fff",
     },
     tabCowImage: { width: "100%", height: "100%", resizeMode: "cover" },
+    // Modal
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: "rgba(0,0,0,0.5)",
+        justifyContent: "flex-end",
+    },
+    modalCard: {
+        backgroundColor: "#fff",
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        padding: 24,
+        gap: 12,
+    },
+    modalHeader: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+    },
+    modalTitle: { fontSize: 18, fontWeight: "bold", color: "#222" },
+    modalSubtitle: { fontSize: 13, fontWeight: "600", color: "#555", marginTop: 4 },
+    optionChip: {
+        flex: 1,
+        margin: 4,
+        paddingVertical: 10,
+        paddingHorizontal: 8,
+        backgroundColor: "#f0f0f0",
+        borderRadius: 12,
+        alignItems: "center",
+    },
+    optionChipSelected: {
+        backgroundColor: "#6eaaff",
+    },
+    optionChipText: { fontSize: 12, color: "#444", textAlign: "center" },
+    optionChipTextSelected: { color: "#fff", fontWeight: "bold" },
+    noteInput: {
+        backgroundColor: "#f5f5f5",
+        borderRadius: 12,
+        padding: 12,
+        fontSize: 14,
+        color: "#222",
+        minHeight: 70,
+        textAlignVertical: "top",
+    },
+    saveBtn: {
+        backgroundColor: "#6eaaff",
+        paddingVertical: 14,
+        borderRadius: 20,
+        alignItems: "center",
+        marginTop: 4,
+    },
+    saveBtnText: { color: "#fff", fontWeight: "bold", fontSize: 15 },
 });

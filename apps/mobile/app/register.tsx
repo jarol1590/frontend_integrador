@@ -116,6 +116,7 @@ export default function Register() {
                 resizeMode="cover"
                 imageStyle={{
                     transform: [{ scale: 1.5 }, { translateY: 285 }],
+                    
                 }}
             />
 
