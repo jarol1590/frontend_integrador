@@ -1,18 +1,19 @@
 {
   "name": "proyectointegrador",
-  "version": "1.0.0",
   "private": true,
   "workspaces": [
-    "apps/*"
+    "apps/*",
+    "packages/*"
   ],
   "scripts": {
-    "dev:web": "npm run dev --workspace=web",
-    "dev:mobile": "npm run start --workspace=mobile"
+    "dev:web":    "npm run dev --workspace=apps/web",
+    "dev:mobile": "npm run start --workspace=apps/mobile",
+    "build:web":  "npm run build --workspace=apps/web",
+    "lint":       "npm run lint --workspaces --if-present",
+    "test":       "npm run test --workspaces --if-present"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/jarol1590/frontend_integrador.git"
-  },
-  "license": "ISC",
-  "type": "module"
+  "overrides": {
+    "react": "19.1.0",
+    "react-dom": "19.1.0"
+  }
 }

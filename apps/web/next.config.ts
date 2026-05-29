@@ -1,7 +1,13 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
-  /* config options here */
-};
+  transpilePackages: [
+    '@proyectointegrador/domain',
+    '@proyectointegrador/application',
+    '@proyectointegrador/shared-infra',
+    '@proyectointegrador/design-tokens',
+    '@proyectointegrador/assets',
+  ],
+}
 
-export default nextConfig;
+export default nextConfig
