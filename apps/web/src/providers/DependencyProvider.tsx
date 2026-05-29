@@ -1,13 +1,20 @@
 'use client'
 import { createContext, useContext, type ReactNode } from 'react'
-import { GetUserUseCase, GetAllUsersUseCase } from '@proyectointegrador/application'
+import {
+  GetUserUseCase,
+  GetAllUsersUseCase,
+  LoginUseCase,
+} from '@proyectointegrador/application'
 import { UserRepositoryWeb } from '../infrastructure/UserRepositoryWeb'
+import { AuthRepositoryWeb } from '../infrastructure/AuthRepositoryWeb'
 
 const userRepository = new UserRepositoryWeb()
+const authRepository = new AuthRepositoryWeb()
 
 interface Dependencies {
   getUserUseCase:     GetUserUseCase
   getAllUsersUseCase: GetAllUsersUseCase
+  loginUseCase:       LoginUseCase
 }
 
 const DependencyContext = createContext<Dependencies | null>(null)
@@ -16,6 +23,7 @@ export function DependencyProvider({ children }: { children: ReactNode }) {
   const deps: Dependencies = {
     getUserUseCase:     new GetUserUseCase(userRepository),
     getAllUsersUseCase: new GetAllUsersUseCase(userRepository),
+    loginUseCase:       new LoginUseCase(authRepository),
   }
 
   return (

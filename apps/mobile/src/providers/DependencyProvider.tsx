@@ -1,12 +1,19 @@
 import { createContext, useContext, type ReactNode } from 'react'
-import { GetUserUseCase, GetAllUsersUseCase } from '@proyectointegrador/application'
+import {
+  GetUserUseCase,
+  GetAllUsersUseCase,
+  LoginUseCase,
+} from '@proyectointegrador/application'
 import { UserRepositoryMobile } from '../infrastructure/UserRepositoryMobile'
+import { AuthRepositoryMobile } from '../infrastructure/AuthRepositoryMobile'
 
 const userRepository = new UserRepositoryMobile()
+const authRepository = new AuthRepositoryMobile()
 
 interface Dependencies {
   getUserUseCase:     GetUserUseCase
   getAllUsersUseCase: GetAllUsersUseCase
+  loginUseCase:       LoginUseCase
 }
 
 const DependencyContext = createContext<Dependencies | null>(null)
@@ -15,6 +22,7 @@ export function DependencyProvider({ children }: { children: ReactNode }) {
   const deps: Dependencies = {
     getUserUseCase:     new GetUserUseCase(userRepository),
     getAllUsersUseCase: new GetAllUsersUseCase(userRepository),
+    loginUseCase:       new LoginUseCase(authRepository),
   }
 
   return (
