@@ -4,6 +4,7 @@ import {
   GetUserUseCase,
   GetAllUsersUseCase,
   LoginUseCase,
+  RegisterUseCase,
 } from '@proyectointegrador/application'
 import { UserRepositoryWeb } from '../infrastructure/UserRepositoryWeb'
 import { AuthRepositoryWeb } from '../infrastructure/AuthRepositoryWeb'
@@ -15,6 +16,7 @@ interface Dependencies {
   getUserUseCase:     GetUserUseCase
   getAllUsersUseCase: GetAllUsersUseCase
   loginUseCase:       LoginUseCase
+  registerUseCase:    RegisterUseCase
 }
 
 const DependencyContext = createContext<Dependencies | null>(null)
@@ -24,6 +26,7 @@ export function DependencyProvider({ children }: { children: ReactNode }) {
     getUserUseCase:     new GetUserUseCase(userRepository),
     getAllUsersUseCase: new GetAllUsersUseCase(userRepository),
     loginUseCase:       new LoginUseCase(authRepository),
+    registerUseCase:    new RegisterUseCase(authRepository),
   }
 
   return (
