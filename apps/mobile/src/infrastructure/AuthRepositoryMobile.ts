@@ -11,24 +11,53 @@ export class AuthRepositoryMobile implements IAuthRepository {
 
   async register(data: RegisterRequest): Promise<void> {
     const response = await this.http.post<{
-      response?: unknown
-      title?: string
-      detail?: string
+      message?: string
+      status?: number
     }>('/usuarios', {
       email: data.email,
       password: data.password,
       estado: data.estado,
+      rolId: data.rolId,
       centroAcopioId: data.centroAcopioId,
+      productor: {
+        nombre: data.productorNombre,
+        documento: data.documento,
+        telefono: data.telefono,
+        tipoDocumentoId: data.tipoDocumentoId,
+        fincaInicial: {
+          nombre: data.fincaNombre ?? '',
+          direccion: data.direccion ?? '',
+          latitud: data.latitud ?? 0,
+          longitud: data.longitud ?? 0,
+          municipioId: data.municipioId,
+        },
+      },
     })
 
-    if (!response.data.response) {
-      if (response.status === 409 || response.status === 500) {
-        throw new Error('Este correo electrónico ya está registrado.')
-      }
+    if (response.status >= 400) {
+      throw new Error(
+        response.data.message ?? 'No se pudo completar el registro',
+      )
+    }
+  }
+
+  async forgotPassword(email: string): Promise<void> {
+    // API siempre retorna 200 con { message }
+    await this.http.post<{ message?: string }>('/auth/forgot-password', { email })
+  }
+
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    const response = await this.http.post<{
+      message?: string
+      title?: string
+      errors?: string[]
+    }>('/auth/reset-password', { token, newPassword })
+
+    if (!response.data.message) {
       throw new Error(
         response.data.title ??
-          response.data.detail ??
-          'No se pudo completar el registro',
+          response.data.errors?.[0] ??
+          'No se pudo restablecer la contraseña',
       )
     }
   }

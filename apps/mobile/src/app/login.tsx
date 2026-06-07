@@ -45,7 +45,7 @@ export default function Login() {
     };
 
     const handleForgotPassword = () => {
-        router.push("/forgot-password" as any);
+        router.push("/forgotPassword" as any);
     };
 
     const handleRegister = () => {

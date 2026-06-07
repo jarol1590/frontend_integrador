@@ -22,6 +22,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useDependencies } from "../providers/DependencyProvider";
 import { geocodeAddress } from "../infrastructure/geocode";
 import { fetchDepartments, fetchCitiesByDepartment, type DepartmentData, type CityData } from "../infrastructure/colombiaApi";
+import { findOrCreateDepartamento, findOrCreateMunicipio } from "../infrastructure/ubicacionApi";
 
 type IdType = "CC" | "Pasaporte" | "NIT";
 
@@ -80,7 +81,7 @@ export default function Register() {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
 
-    // Departamentos / municipios desde API
+    // Departamentos / municipios desde API pública
     const [deptos, setDeptos] = useState<DepartmentData[]>([]);
     const [cities, setCities] = useState<CityData[]>([]);
     const [loadingDeptos, setLoadingDeptos] = useState(false);
@@ -90,19 +91,24 @@ export default function Register() {
     useEffect(() => {
         setLoadingDeptos(true);
         fetchDepartments()
-            .then(setDeptos)
-            .catch(() => Alert.alert("Error", "No se pudieron cargar los departamentos."))
+            .then((data) => setDeptos(Array.isArray(data) ? data : []))
+            .catch(() => {
+                setDeptos([])
+                Alert.alert("Error", "No se pudieron cargar los departamentos.")
+            })
             .finally(() => setLoadingDeptos(false));
     }, []);
 
     // Cargar municipios al seleccionar departamento
     useEffect(() => {
         if (!departamento) { setCities([]); return; }
-        const dept = deptos.find((d) => d.name === departamento);
+        const list = deptos ?? []
+        if (!Array.isArray(list) || list.length === 0) return
+        const dept = list.find((d) => d.name === departamento);
         if (!dept) return;
         setLoadingCities(true);
         fetchCitiesByDepartment(dept.id)
-            .then(setCities)
+            .then((data) => setCities(Array.isArray(data) ? data : []))
             .catch(() => setCities([]))
             .finally(() => setLoadingCities(false));
     }, [departamento, deptos]);
@@ -154,23 +160,44 @@ export default function Register() {
     const data = getValues();
     setLoading(true);
     try {
+        const roleMap: Record<string, number> = {
+            productor: 3,
+            acopio: 2,
+            trabajador: 4,
+        }
+        const docMap: Record<string, number> = {
+            CC: 1,
+            NIT: 3,
+            Pasaporte: 4,
+        }
+
+        const rolId = roleMap[data.role ?? 'productor']
+        const tipoDocumentoId = docMap[data.idType]
+
+        let municipioId = 0
+        console.log('[DEBUG] handleRegister depto:', data.departamento, 'muni:', data.municipio)
+        if (data.departamento && data.municipio) {
+            const deptoId = await findOrCreateDepartamento(data.departamento)
+            console.log('[DEBUG] deptoId resuelto:', deptoId)
+            municipioId = await findOrCreateMunicipio(data.municipio, deptoId)
+            console.log('[DEBUG] municipioId resuelto:', municipioId)
+        }
+
         await registerUseCase.execute({
             email: data.correo,
             password: data.password,
-            nombres: data.nombres,
-            apellidos: data.apellidos,
-            telefono: data.telefono,
-            tipoIdentificacion: data.idType,
-            numeroIdentificacion: data.idNumber,
-            rol: data.role ?? 'productor',
-            nombreLugar: data.nombreLugar || undefined,
-            departamento: data.departamento ?? undefined,
-            municipio: data.municipio ?? undefined,
+            rolId,
             centroAcopioId: data.centroSeleccionado ? Number(data.centroSeleccionado) : null,
+            productorNombre: `${data.nombres} ${data.apellidos}`.trim(),
+            documento: data.idNumber,
+            telefono: data.telefono,
+            tipoDocumentoId,
+            fincaNombre: data.nombreLugar || undefined,
             direccion: data.direccion || undefined,
             latitud: data.latitud ? Number(data.latitud) : undefined,
             longitud: data.longitud ? Number(data.longitud) : undefined,
-        });
+            municipioId,
+        })
         router.push("/verify-code?flow=register" as any);
     } catch (error: any) {
         Alert.alert("Error", error.message ?? "No se pudo completar el registro.");
@@ -377,7 +404,7 @@ export default function Register() {
                                 <Ionicons name={deptoOpen ? "chevron-up" : "chevron-down"} size={18} color="#555" />
                             )}
                         </TouchableOpacity>
-                        {deptoOpen && (
+                        {deptoOpen && Array.isArray(deptos) && (
                             <ScrollView style={styles.dropdownScroll} nestedScrollEnabled>
                                 {deptos.map((dep) => (
                                     <TouchableOpacity key={dep.id}
@@ -409,7 +436,7 @@ export default function Register() {
                             )}
                         </TouchableOpacity>
                         {errors.municipio && <Text style={styles.errorText}>{errors.municipio.message}</Text>}
-                        {munOpen && (
+                        {munOpen && Array.isArray(cities) && (
                             <ScrollView style={styles.dropdownScroll} nestedScrollEnabled>
                                 {cities.map((city) => (
                                     <TouchableOpacity key={city.id}

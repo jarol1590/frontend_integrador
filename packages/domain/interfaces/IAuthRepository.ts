@@ -15,24 +15,24 @@ export interface RegisterRequest {
   email: string
   password: string
   estado: string
+  rolId: number
   centroAcopioId?: number | null
-  nombres: string
-  apellidos: string
+  productorNombre: string
+  documento: string
   telefono: string
-  tipoIdentificacion: string
-  numeroIdentificacion: string
-  rol: 'productor' | 'acopio' | 'trabajador'
-  nombreLugar?: string
-  departamento?: string
-  municipio?: string
+  tipoDocumentoId: number
+  fincaNombre?: string
   direccion?: string
   latitud?: number
   longitud?: number
+  municipioId: number
 }
 
 export interface IAuthRepository {
   login(email: string, password: string): Promise<AuthSession>
   register(data: RegisterRequest): Promise<void>
+  forgotPassword(email: string): Promise<void>
+  resetPassword(token: string, newPassword: string): Promise<void>
   logout(): Promise<void>
   getSession(): Promise<AuthSession | null>
 }

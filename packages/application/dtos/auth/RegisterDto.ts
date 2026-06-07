@@ -1,17 +1,15 @@
 export interface RegisterDto {
   email: string
   password: string
-  nombres: string
-  apellidos: string
-  telefono: string
-  tipoIdentificacion: string
-  numeroIdentificacion: string
-  rol: 'productor' | 'acopio' | 'trabajador'
-  nombreLugar?: string
-  departamento?: string
-  municipio?: string
+  rolId: number
   centroAcopioId?: number | null
+  productorNombre: string
+  documento: string
+  telefono: string
+  tipoDocumentoId: number
+  fincaNombre?: string
   direccion?: string
   latitud?: number
   longitud?: number
+  municipioId: number
 }
