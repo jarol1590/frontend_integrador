@@ -35,7 +35,11 @@ export default function Login() {
         setLoading(true);
         try {
             const response = await loginUseCase.execute(data);
-            router.push("/dashboard" as any);
+            if (response.usuario.tipoUsuario === "administrador") {
+              router.push("/admin" as any);
+            } else {
+              router.push("/dashboard" as any);
+            }
             Alert.alert("Bienvenido ", response.usuario.email);
         } catch (error: any) {
             Alert.alert("Error", error.message ?? "No se pudo iniciar sesión.");

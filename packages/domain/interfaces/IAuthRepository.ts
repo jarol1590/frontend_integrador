@@ -1,9 +1,11 @@
 export interface AuthUser {
-  usuarioId: string
+  usuarioId: number
   email: string
   estado: string
   fechaCreacion: string
-  centroAcopio: string
+  tipoUsuario: string
+  rolNombre: string
+  centroAcopio?: string
 }
 
 export interface AuthSession {

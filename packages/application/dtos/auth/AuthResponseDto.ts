@@ -1,9 +1,11 @@
 export interface UsuarioDto {
-  usuarioId: string
+  usuarioId: number
   email: string
   estado: string
   fechaCreacion: string
-  centroAcopio: string
+  tipoUsuario: string
+  rolNombre: string
+  centroAcopio?: string
 }
 
 export interface AuthResponseDto {

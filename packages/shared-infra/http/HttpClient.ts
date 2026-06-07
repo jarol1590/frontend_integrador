@@ -4,7 +4,16 @@ export interface HttpResponse<T> {
 }
 
 export class HttpClient {
-  constructor(private readonly baseUrl: string) {}
+  constructor(
+    private readonly baseUrl: string,
+    private readonly token?: string,
+  ) {}
+
+  private headers(): Record<string, string> {
+    const h: Record<string, string> = { 'Content-Type': 'application/json' }
+    if (this.token) h['Authorization'] = `Bearer ${this.token}`
+    return h
+  }
 
   private async parseJson<T>(res: Response): Promise<T> {
     const text = await res.text()
@@ -19,7 +28,7 @@ export class HttpClient {
   }
 
   async get<T>(path: string): Promise<HttpResponse<T>> {
-    const res = await fetch(`${this.baseUrl}${path}`)
+    const res = await fetch(`${this.baseUrl}${path}`, { headers: this.headers() })
     const data = await this.parseJson<T>(res)
     return { data, status: res.status }
   }
@@ -27,7 +36,7 @@ export class HttpClient {
   async post<T>(path: string, body: unknown): Promise<HttpResponse<T>> {
     const res = await fetch(`${this.baseUrl}${path}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.headers(),
       body: JSON.stringify(body),
     })
     const data = await this.parseJson<T>(res)
@@ -37,7 +46,7 @@ export class HttpClient {
   async put<T>(path: string, body: unknown): Promise<HttpResponse<T>> {
     const res = await fetch(`${this.baseUrl}${path}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.headers(),
       body: JSON.stringify(body),
     })
     const data = await this.parseJson<T>(res)
@@ -45,7 +54,10 @@ export class HttpClient {
   }
 
   async delete<T>(path: string): Promise<HttpResponse<T>> {
-    const res = await fetch(`${this.baseUrl}${path}`, { method: 'DELETE' })
+    const res = await fetch(`${this.baseUrl}${path}`, {
+      method: 'DELETE',
+      headers: this.headers(),
+    })
     const data = await this.parseJson<T>(res)
     return { data, status: res.status }
   }
