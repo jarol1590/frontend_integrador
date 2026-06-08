@@ -11,7 +11,7 @@ import {
     Alert,
     ActivityIndicator,
 } from "react-native";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -25,6 +25,7 @@ export default function ResetPassword() {
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const { resetPasswordUseCase } = useDependencies();
+    const { token: codeParam } = useLocalSearchParams<{ token: string }>();
 
     const {
         control,
@@ -32,7 +33,7 @@ export default function ResetPassword() {
         formState: { errors },
     } = useForm<ResetPasswordFormData>({
         resolver: zodResolver(resetPasswordSchema),
-        defaultValues: { token: "", newPassword: "", confirmPassword: "" },
+        defaultValues: { token: codeParam ?? "", newPassword: "", confirmPassword: "" },
     });
 
     const onSubmit = async (data: ResetPasswordFormData) => {
@@ -80,36 +81,10 @@ export default function ResetPassword() {
 
                 <Text style={styles.title}>Restablecer contraseña</Text>
                 <Text style={styles.subtitle}>
-                    Ingresa el código de verificación y tu nueva contraseña
+                    Ingresa tu nueva contraseña
                 </Text>
 
                 <View style={styles.card}>
-                    <View style={[styles.inputContainer, errors.token && styles.inputError]}>
-                        <Ionicons
-                            name="key-outline"
-                            size={20}
-                            color="#555"
-                            style={{ marginRight: 10 }}
-                        />
-                        <Controller
-                            control={control}
-                            name="token"
-                            render={({ field: { onChange, onBlur, value } }) => (
-                                <TextInput
-                                    placeholder="Código de verificación"
-                                    style={styles.input}
-                                    placeholderTextColor="#666"
-                                    autoCapitalize="none"
-                                    value={value}
-                                    onChangeText={onChange}
-                                    onBlur={onBlur}
-                                />
-                            )}
-                        />
-                    </View>
-                    {errors.token && (
-                        <Text style={styles.errorText}>{errors.token.message}</Text>
-                    )}
 
                     <View style={[styles.inputContainer, errors.newPassword && styles.inputError]}>
                         <Ionicons

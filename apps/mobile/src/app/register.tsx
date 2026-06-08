@@ -158,6 +158,7 @@ export default function Register() {
     const valid = await trigger(["password", "confirmPassword"]);
     if (!valid) return;
     const data = getValues();
+    console.log('[DEBUG REGISTER] step 1 — all form data:', JSON.stringify(data, null, 2))
     setLoading(true);
     try {
         const roleMap: Record<string, number> = {
@@ -173,17 +174,18 @@ export default function Register() {
 
         const rolId = roleMap[data.role ?? 'productor']
         const tipoDocumentoId = docMap[data.idType]
+        console.log('[DEBUG REGISTER] role:', data.role, '→ rolId:', rolId, '| idType:', data.idType, '→ tipoDocumentoId:', tipoDocumentoId)
 
         let municipioId = 0
-        console.log('[DEBUG] handleRegister depto:', data.departamento, 'muni:', data.municipio)
+        console.log('[DEBUG REGISTER] depto:', data.departamento, 'muni:', data.municipio)
         if (data.departamento && data.municipio) {
             const deptoId = await findOrCreateDepartamento(data.departamento)
-            console.log('[DEBUG] deptoId resuelto:', deptoId)
+            console.log('[DEBUG REGISTER] deptoId resuelto:', deptoId)
             municipioId = await findOrCreateMunicipio(data.municipio, deptoId)
-            console.log('[DEBUG] municipioId resuelto:', municipioId)
+            console.log('[DEBUG REGISTER] municipioId resuelto:', municipioId)
         }
 
-        await registerUseCase.execute({
+        const dto = {
             email: data.correo,
             password: data.password,
             rolId,
@@ -197,9 +199,14 @@ export default function Register() {
             latitud: data.latitud ? Number(data.latitud) : undefined,
             longitud: data.longitud ? Number(data.longitud) : undefined,
             municipioId,
-        })
+        }
+        console.log('[DEBUG REGISTER] step 2 — RegisterDto a enviar:', JSON.stringify(dto, null, 2))
+
+        await registerUseCase.execute(dto)
+        console.log('[DEBUG REGISTER] step 3 — registro exitoso, redirigiendo...')
         router.push("/verify-code?flow=register" as any);
     } catch (error: any) {
+        console.log('[DEBUG REGISTER] step 3 — ERROR capturado:', error.message, JSON.stringify(error, null, 2))
         Alert.alert("Error", error.message ?? "No se pudo completar el registro.");
     } finally {
         setLoading(false);

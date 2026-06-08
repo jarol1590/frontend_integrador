@@ -43,7 +43,7 @@ export default function ForgotPassword() {
             if (method === "email") {
                 await forgotPasswordUseCase.execute({ email: data.email });
             }
-            router.push(`/resetPassword` as any);
+            router.push(`/verify-code?flow=forgot` as any);
         } catch (error: any) {
             Alert.alert("Error", error.message ?? "No se pudo enviar el código.");
         } finally {
@@ -170,7 +170,7 @@ export default function ForgotPassword() {
                             )}
 
                             <Pressable
-                                onPress={method === "email" ? handleSubmit(onSubmit) : () => router.push(`/resetPassword` as any)}
+                                onPress={method === "email" ? handleSubmit(onSubmit) : () => router.push(`/verify-code?flow=forgot` as any)}
                                 disabled={loading}
                                 style={({ pressed }) => [
                                     styles.button,

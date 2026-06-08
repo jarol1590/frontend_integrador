@@ -5,6 +5,7 @@ export * from './use-cases/LoginUseCase'
 export * from './use-cases/RegisterUseCase'
 export * from './use-cases/ForgotPasswordUseCase'
 export * from './use-cases/ResetPasswordUseCase'
+export * from './use-cases/VerifyResetCodeUseCase'
 
 // DTOs
 export * from './dtos/UserDTO'

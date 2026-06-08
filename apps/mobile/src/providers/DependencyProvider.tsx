@@ -6,6 +6,7 @@ import {
   RegisterUseCase,
   ForgotPasswordUseCase,
   ResetPasswordUseCase,
+  VerifyResetCodeUseCase,
 } from '@proyectointegrador/application'
 import { UserRepositoryMobile } from '../infrastructure/UserRepositoryMobile'
 import { AuthRepositoryMobile } from '../infrastructure/AuthRepositoryMobile'
@@ -19,6 +20,7 @@ interface Dependencies {
   loginUseCase:           LoginUseCase
   registerUseCase:        RegisterUseCase
   forgotPasswordUseCase:  ForgotPasswordUseCase
+  verifyResetCodeUseCase: VerifyResetCodeUseCase
   resetPasswordUseCase:   ResetPasswordUseCase
 }
 
@@ -31,6 +33,7 @@ export function DependencyProvider({ children }: { children: ReactNode }) {
     loginUseCase:           new LoginUseCase(authRepository),
     registerUseCase:        new RegisterUseCase(authRepository),
     forgotPasswordUseCase:  new ForgotPasswordUseCase(authRepository),
+    verifyResetCodeUseCase: new VerifyResetCodeUseCase(authRepository),
     resetPasswordUseCase:   new ResetPasswordUseCase(authRepository),
   }
 

@@ -10,16 +10,17 @@ export class AuthRepositoryMobile implements IAuthRepository {
   private userKey = 'usuario'
 
   async register(data: RegisterRequest): Promise<void> {
-    const response = await this.http.post<{
-      message?: string
-      status?: number
-    }>('/usuarios', {
+    console.log('[DEBUG AUTH REPO] register called with:', JSON.stringify(data, null, 2))
+
+    const body: Record<string, any> = {
       email: data.email,
       password: data.password,
       estado: data.estado,
       rolId: data.rolId,
       centroAcopioId: data.centroAcopioId,
-      productor: {
+    }
+    if (data.rolId === 3) {
+      body.productor = {
         nombre: data.productorNombre,
         documento: data.documento,
         telefono: data.telefono,
@@ -31,10 +32,19 @@ export class AuthRepositoryMobile implements IAuthRepository {
           longitud: data.longitud ?? 0,
           municipioId: data.municipioId,
         },
-      },
-    })
+      }
+    }
+    console.log('[DEBUG AUTH REPO] POST /usuarios body:', JSON.stringify(body, null, 2))
+
+    const response = await this.http.post<{
+      message?: string
+      status?: number
+    }>('/usuarios', body)
+
+    console.log('[DEBUG AUTH REPO] POST /usuarios response status:', response.status, 'data:', JSON.stringify(response.data, null, 2))
 
     if (response.status >= 400) {
+      console.log('[DEBUG AUTH REPO] Error response:', JSON.stringify(response.data, null, 2))
       throw new Error(
         response.data.message ?? 'No se pudo completar el registro',
       )
@@ -42,22 +52,37 @@ export class AuthRepositoryMobile implements IAuthRepository {
   }
 
   async forgotPassword(email: string): Promise<void> {
-    // API siempre retorna 200 con { message }
     await this.http.post<{ message?: string }>('/auth/forgot-password', { email })
+  }
+
+  async verifyResetCode(token: string): Promise<void> {
+    const response = await this.http.post<{
+      success: boolean
+      status: number
+      method: string
+      errors: string | null
+      response: { message?: string } | null
+    }>('/auth/verify-reset-code', { token })
+
+    if (!response.data.success) {
+      throw new Error(
+        response.data.errors ?? 'Código inválido',
+      )
+    }
   }
 
   async resetPassword(token: string, newPassword: string): Promise<void> {
     const response = await this.http.post<{
-      message?: string
-      title?: string
-      errors?: string[]
+      success: boolean
+      status: number
+      method: string
+      errors: string | null
+      response: { message?: string } | null
     }>('/auth/reset-password', { token, newPassword })
 
-    if (!response.data.message) {
+    if (!response.data.success) {
       throw new Error(
-        response.data.title ??
-          response.data.errors?.[0] ??
-          'No se pudo restablecer la contraseña',
+        response.data.errors ?? 'No se pudo restablecer la contraseña',
       )
     }
   }

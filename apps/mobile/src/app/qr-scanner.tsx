@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import {
     View,
     Text,
+    Image,
     StyleSheet,
     TouchableOpacity,
     Animated,
@@ -12,161 +13,44 @@ import { CameraView, useCameraPermissions } from "expo-camera";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
+
+
 const screenHeight = Dimensions.get("window").height;
 
-function MilkGlass() {
-    const waveAnim = useRef(new Animated.Value(0)).current;
 
-    useEffect(() => {
-        const anim = Animated.loop(
-            Animated.sequence([
-                Animated.timing(waveAnim, {
-                    toValue: 1,
-                    duration: 2000,
-                    useNativeDriver: true,
-                }),
-                Animated.timing(waveAnim, {
-                    toValue: 0,
-                    duration: 2000,
-                    useNativeDriver: true,
-                }),
-            ])
-        );
-        anim.start();
-        return () => anim.stop();
-    }, [waveAnim]);
-
-    const waveX = waveAnim.interpolate({
-        inputRange: [0, 1],
-        outputRange: [-15, 15],
-    });
-
-    const waveX2 = waveAnim.interpolate({
-        inputRange: [0, 1],
-        outputRange: [10, -10],
-    });
-
-    const waveY = waveAnim.interpolate({
-        inputRange: [0, 0.5, 1],
-        outputRange: [0, -4, 0],
-    });
-
-    return (
-        <View style={milkStyles.container}>
-            <View style={milkStyles.glass}>
-                <View style={milkStyles.milkFill} />
-                <Animated.View
-                    style={[
-                        milkStyles.wavePill,
-                        {
-                            transform: [
-                                { translateX: waveX },
-                                { translateY: waveY },
-                            ],
-                        },
-                    ]}
-                />
-                <Animated.View
-                    style={[
-                        milkStyles.wavePill2,
-                        {
-                            transform: [
-                                { translateX: waveX2 },
-                                { translateY: waveY },
-                            ],
-                        },
-                    ]}
-                />
-            </View>
-            <View style={milkStyles.stem} />
-            <View style={milkStyles.base} />
-        </View>
-    );
-}
-
-const milkStyles = StyleSheet.create({
-    container: {
-        alignItems: "center",
-        justifyContent: "center",
-        marginBottom: 10,
-    },
-    glass: {
-        width: 100,
-        height: 140,
-        borderWidth: 3,
-        borderColor: "#b0c4de",
-        borderRadius: 16,
-        borderBottomLeftRadius: 8,
-        borderBottomRightRadius: 8,
-        overflow: "hidden",
-        backgroundColor: "rgba(255,255,255,0.15)",
-    },
-    milkFill: {
-        position: "absolute",
-        bottom: 0,
-        left: 0,
-        right: 0,
-        height: "78%",
-        backgroundColor: "#fef9e0",
-    },
-    wavePill: {
-        position: "absolute",
-        bottom: "78%",
-        left: -20,
-        width: 80,
-        height: 18,
-        borderRadius: 9,
-        backgroundColor: "#fef9e0",
-    },
-    wavePill2: {
-        position: "absolute",
-        bottom: "77%",
-        left: 30,
-        width: 70,
-        height: 16,
-        borderRadius: 8,
-        backgroundColor: "#fef9e0",
-    },
-    stem: {
-        width: 6,
-        height: 25,
-        backgroundColor: "#b0c4de",
-        borderBottomLeftRadius: 3,
-        borderBottomRightRadius: 3,
-    },
-    base: {
-        width: 60,
-        height: 6,
-        backgroundColor: "#b0c4de",
-        borderRadius: 3,
-        marginTop: -2,
-    },
-});
 
 export default function QRScanner() {
     const [permission, requestPermission] = useCameraPermissions();
     const [scanned, setScanned] = useState(false);
     const [qrData, setQrData] = useState<any>(null);
     const [showSheet, setShowSheet] = useState(false);
+    const [closing, setClosing] = useState(false);
     const translateY = useRef(new Animated.Value(screenHeight)).current;
 
     useEffect(() => {
         if (showSheet) {
+            setClosing(false);
             Animated.timing(translateY, {
                 toValue: 0,
                 duration: 400,
                 useNativeDriver: true,
             }).start();
-        } else {
-            translateY.setValue(screenHeight);
         }
     }, [showSheet, translateY]);
 
     const handleClose = () => {
-        setShowSheet(false);
-        setScanned(false);
-        setQrData(null);
-        translateY.setValue(screenHeight);
+        setClosing(true);
+        Animated.timing(translateY, {
+            toValue: screenHeight,
+            duration: 300,
+            useNativeDriver: true,
+        }).start(() => {
+            setShowSheet(false);
+            setScanned(false);
+            setQrData(null);
+            setClosing(false);
+            translateY.setValue(screenHeight);
+        });
     };
 
     const handleBarCodeScanned = ({ data }: { data: string }) => {
@@ -183,6 +67,10 @@ export default function QRScanner() {
 
         setShowSheet(true);
     };
+
+    const loteId = qrData?.lote_id ?? qrData?.lote ?? qrData?.id ?? qrData?.raw;
+    const producto = qrData?.producto ?? qrData?.tipo_leche;
+    const fincaOrigen = qrData?.finca_origen ?? qrData?.origen ?? qrData?.finca;
 
     if (!permission) {
         return (
@@ -271,7 +159,7 @@ export default function QRScanner() {
                 </View>
             </View>
 
-            {showSheet && (
+            {(showSheet || closing) && (
                 <Animated.View
                     style={[
                         styles.bottomSheet,
@@ -286,55 +174,35 @@ export default function QRScanner() {
                         <Ionicons name="close" size={26} color="#666" />
                     </TouchableOpacity>
 
-                    <MilkGlass />
+                    <Image
+                        source={require("../../../../packages/assets/images/VasitoDancing.gif")}
+                        style={styles.video}
+                        resizeMode="contain"
+                    />
 
                     <Text style={styles.sheetTitle}>Lote de leche</Text>
 
                     {qrData && (
                         <View style={styles.qrInfo}>
                             <Text style={styles.qrLabel}>
-                                ID:{" "}
+                                ID del lote:{" "}
                                 <Text style={styles.qrValue}>
-                                    {qrData.lote_id ?? qrData.raw}
+                                    {loteId}
                                 </Text>
                             </Text>
-                            {qrData.producto && (
+                            {producto && (
                                 <Text style={styles.qrLabel}>
                                     Producto:{" "}
                                     <Text style={styles.qrValue}>
-                                        {qrData.producto}
+                                        {producto}
                                     </Text>
                                 </Text>
                             )}
-                            {qrData.fecha_produccion && (
+                            {fincaOrigen && (
                                 <Text style={styles.qrLabel}>
-                                    Producción:{" "}
+                                    Finca de origen:{" "}
                                     <Text style={styles.qrValue}>
-                                        {qrData.fecha_produccion}
-                                    </Text>
-                                </Text>
-                            )}
-                            {qrData.fecha_vencimiento && (
-                                <Text style={styles.qrLabel}>
-                                    Vence:{" "}
-                                    <Text style={styles.qrValue}>
-                                        {qrData.fecha_vencimiento}
-                                    </Text>
-                                </Text>
-                            )}
-                            {qrData.origen && (
-                                <Text style={styles.qrLabel}>
-                                    Origen:{" "}
-                                    <Text style={styles.qrValue}>
-                                        {qrData.origen}
-                                    </Text>
-                                </Text>
-                            )}
-                            {qrData.estado_calidad && (
-                                <Text style={styles.qrLabel}>
-                                    Estado:{" "}
-                                    <Text style={styles.qrValue}>
-                                        {qrData.estado_calidad}
+                                        {fincaOrigen}
                                     </Text>
                                 </Text>
                             )}
@@ -526,5 +394,12 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: "#222",
         fontWeight: "600",
+    },
+
+    video: {
+        width: 170,
+        height: 170,
+        marginBottom: 10,
+        borderRadius: 16,
     },
 });

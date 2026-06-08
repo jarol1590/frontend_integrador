@@ -35,6 +35,7 @@ export interface IAuthRepository {
   login(email: string, password: string): Promise<AuthSession>
   register(data: RegisterRequest): Promise<void>
   forgotPassword(email: string): Promise<void>
+  verifyResetCode(token: string): Promise<void>
   resetPassword(token: string, newPassword: string): Promise<void>
   logout(): Promise<void>
   getSession(): Promise<AuthSession | null>
