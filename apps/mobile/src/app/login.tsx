@@ -35,10 +35,10 @@ export default function Login() {
         setLoading(true);
         try {
             const response = await loginUseCase.execute(data);
-            if (response.usuario.tipoUsuario === "administrador") {
+            if (response.usuario.rolNombre === "Administrador") {
               router.push("/admin" as any);
-            } else {
-              router.push("/dashboard" as any);
+            }else if (response.usuario.rolNombre === "Productor"){
+                router.push("/dashboard" as any);
             }
             Alert.alert("Bienvenido ", response.usuario.email);
         } catch (error: any) {

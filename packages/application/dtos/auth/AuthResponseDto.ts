@@ -5,6 +5,7 @@ export interface UsuarioDto {
   fechaCreacion: string
   tipoUsuario: string
   rolNombre: string
+  rolId?: number
   centroAcopio?: string
 }
 
