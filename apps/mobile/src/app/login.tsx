@@ -13,12 +13,14 @@ import {
 import { router } from "expo-router";
 import ResponseModal from "../components/ResponseModal";
 import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { loginSchema, type LoginFormData } from "@proyectointegrador/application";
 import { useDependencies } from "../providers/DependencyProvider";
 
 export default function Login() {
+    const insets = useSafeAreaInsets();
     const {
         control,
         handleSubmit,
@@ -70,7 +72,7 @@ export default function Login() {
     };
 
     return (
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, paddingTop: insets.top }}>
             <ImageBackground
                 source={require("../../../../packages/assets/images/MainBackground.png")}
                 style={StyleSheet.absoluteFillObject}

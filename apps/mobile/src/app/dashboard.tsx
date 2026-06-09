@@ -410,6 +410,13 @@ export default function Dashboard() {
                     </TouchableOpacity>
                 )}
 
+                {userRole === "productor" && (
+                    <TouchableOpacity style={styles.tabItem} onPress={() => router.push("/gemelo" as any)}>
+                        <Ionicons name="pulse-outline" size={24} color="#888" />
+                        <Text style={styles.tabLabel}>Gemelo</Text>
+                    </TouchableOpacity>
+                )}
+
                 <TouchableOpacity style={styles.tabItem} onPress={() => setActiveTab("user")}>
                     <Ionicons
                         name={activeTab === "user" ? "person" : "person-outline"}

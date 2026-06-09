@@ -82,7 +82,7 @@ export default function Lotes() {
         return (
             <TouchableOpacity style={styles.loteCard} onPress={() => setSelectedLote(item)}>
                 <View style={{ flex: 1 }}>
-                    <Text style={styles.loteTitle}>Lote #{item.loteId}</Text>
+                    <Text style={styles.loteTitle}>{item.codigo ?? `Lote #${item.loteId}`}</Text>
                     <Text style={styles.loteInfo}>{item.volumenCapturadoLitros} L</Text>
                 </View>
                 <View style={[styles.badge, { backgroundColor: s.color }]}>
@@ -134,7 +134,7 @@ export default function Lotes() {
                         <TouchableOpacity style={styles.qrClose} onPress={() => setSelectedLote(null)}>
                             <Ionicons name="close" size={24} color="#666" />
                         </TouchableOpacity>
-                        <Text style={styles.qrTitle}>Lote #{selectedLote?.loteId}</Text>
+                        <Text style={styles.qrTitle}>{selectedLote?.codigo ?? `Lote #${selectedLote?.loteId}`}</Text>
                         <Text style={styles.qrSub}>{selectedLote?.volumenCapturadoLitros} L</Text>
                         <Text style={styles.qrSub}>{status(selectedLote!).label}</Text>
                         <View style={styles.qrWrapper}>

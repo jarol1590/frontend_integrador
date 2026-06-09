@@ -208,7 +208,7 @@ export default function QRScanner() {
                     ) : showTransporteForm ? (
                         <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ width: "100%", gap: 12 }}>
                             <Text style={styles.sheetTitle}>Registrar transporte</Text>
-                            <Text style={styles.qrLabel}>Lote #{lote?.loteId}</Text>
+                            <Text style={styles.qrLabel}>{lote?.codigo ?? `Lote #${lote?.loteId}`}</Text>
                             <TextInput
                                 style={styles.input}
                                 placeholder="Placa del vehículo"
@@ -251,7 +251,7 @@ export default function QRScanner() {
                                 {esAbierto ? "Lote disponible" : "Lote en tránsito"}
                             </Text>
                             <View style={styles.qrInfo}>
-                                <Text style={styles.qrLabel}>Lote: <Text style={styles.qrValue}>#{lote.loteId}</Text></Text>
+                                <Text style={styles.qrLabel}>Lote: <Text style={styles.qrValue}>{lote.codigo ?? `#${lote.loteId}`}</Text></Text>
                                 {finca && (
                                     <Text style={styles.qrLabel}>Finca: <Text style={styles.qrValue}>{finca.nombre}</Text></Text>
                                 )}

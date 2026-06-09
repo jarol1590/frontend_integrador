@@ -186,7 +186,7 @@ export default function Ordenos() {
                                         disabled={!lote}
                                     >
                                         <View style={{ flex: 1 }}>
-                                            <Text style={styles.ordenoTitle}>Ordeño #{item.ordenoId}</Text>
+                                            <Text style={styles.ordenoTitle}>{item.codigo ?? `Ordeño #${item.ordenoId}`}</Text>
                                             <Text style={styles.ordenoInfo}>
                                                 {new Date(item.fechaHoraInicio).toLocaleDateString("es-CO", {
                                                     year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit"
@@ -225,7 +225,7 @@ export default function Ordenos() {
                         <TouchableOpacity style={styles.qrClose} onPress={() => setSelectedLote(null)}>
                             <Ionicons name="close" size={24} color="#666" />
                         </TouchableOpacity>
-                        <Text style={styles.qrTitle}>Lote #{selectedLote?.loteId}</Text>
+                        <Text style={styles.qrTitle}>{selectedLote?.codigo ?? `Lote #${selectedLote?.loteId}`}</Text>
                         <Text style={styles.qrSub}>Volumen: {selectedLote?.volumenCapturadoLitros} L</Text>
                         <View style={styles.qrWrapper}>
                             {selectedLote && (

@@ -5,11 +5,13 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL ?? ""
 
 export interface LoteDto {
     loteId: number
+    codigo?: string
     ordenoId: number
     centroAcopioId: number | null
     volumenCapturadoLitros: number
     transporteId: number | null
     transporteFechaHoraEntrada: string | null
+    fincaNombre?: string
 }
 
 export interface MuestraDto {

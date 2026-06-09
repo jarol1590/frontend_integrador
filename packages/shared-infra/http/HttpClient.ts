@@ -53,6 +53,16 @@ export class HttpClient {
     return { data, status: res.status }
   }
 
+  async patch<T>(path: string, body?: unknown): Promise<HttpResponse<T>> {
+    const res = await fetch(`${this.baseUrl}${path}`, {
+      method: 'PATCH',
+      headers: this.headers(),
+      body: body != null ? JSON.stringify(body) : undefined,
+    })
+    const data = await this.parseJson<T>(res)
+    return { data, status: res.status }
+  }
+
   async delete<T>(path: string): Promise<HttpResponse<T>> {
     const res = await fetch(`${this.baseUrl}${path}`, {
       method: 'DELETE',

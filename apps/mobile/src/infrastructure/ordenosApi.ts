@@ -5,15 +5,18 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL ?? ""
 
 export interface LoteDto {
     loteId: number
+    codigo?: string
     ordenoId: number
     centroAcopioId: number | null
     volumenCapturadoLitros: number
     transporteId: number | null
     transporteFechaHoraEntrada: string | null
+    fincaNombre?: string
 }
 
 export interface OrdenoDto {
     ordenoId: number
+    codigo?: string
     fechaHoraInicio: string
     fechaHoraFin: string | null
     volumenLitros: number
@@ -129,7 +132,7 @@ export async function getTransportesByCentro(centroAcopioId: number): Promise<Tr
 
 export async function completarTransporte(transporteId: number): Promise<TransporteDto> {
     const http = await authHttp()
-    const res = await http.post<any>(`/transportes/${transporteId}/completar`)
+    const res = await http.post<any>(`/transportes/${transporteId}/completar`, {})
     return unwrapResponse<TransporteDto>(res)
 }
 

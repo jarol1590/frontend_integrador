@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import {
     View,
     Text,
@@ -9,7 +9,9 @@ import {
     Alert,
     ActivityIndicator,
     RefreshControl,
+    Keyboard,
 } from "react-native"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 import ResponseModal from "../components/ResponseModal"
 import { router } from "expo-router"
 import { Ionicons } from "@expo/vector-icons"
@@ -25,6 +27,9 @@ import {
 } from "../infrastructure/parametrosApi"
 
 export default function ParametrosScreen() {
+    const insets = useSafeAreaInsets()
+    const formScrollRef = useRef<ScrollView>(null)
+    const [keyboardPadding, setKeyboardPadding] = useState(0)
     const [parametros, setParametros] = useState<ParametroCalidadDto[]>([])
     const [loading, setLoading] = useState(true)
     const [refreshing, setRefreshing] = useState(false)
@@ -47,6 +52,15 @@ export default function ParametrosScreen() {
 
     useEffect(() => {
         loadUserAndParams()
+    }, [])
+
+    useEffect(() => {
+        const show = Keyboard.addListener("keyboardDidShow", (e) => {
+            setKeyboardPadding(e.endCoordinates.height)
+            setTimeout(() => formScrollRef.current?.scrollToEnd({ animated: true }), 200)
+        })
+        const hide = Keyboard.addListener("keyboardDidHide", () => setKeyboardPadding(0))
+        return () => { show.remove(); hide.remove() }
     }, [])
 
     const showModal = (type: "success" | "error", title: string, message: string) => {
@@ -234,7 +248,7 @@ export default function ParametrosScreen() {
     }
 
     return (
-        <View style={{ flex: 1, backgroundColor: "#f5f5f5" }}>
+        <View style={{ flex: 1, backgroundColor: "#f5f5f5", paddingTop: insets.top }}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
                     <Ionicons name="arrow-back" size={24} color="#333" />
@@ -244,7 +258,13 @@ export default function ParametrosScreen() {
             </View>
 
             {showForm ? (
-                <ScrollView style={styles.formContainer} keyboardShouldPersistTaps="handled">
+                <ScrollView
+                    ref={formScrollRef}
+                    style={styles.formContainer}
+                    contentContainerStyle={{ paddingBottom: keyboardPadding + 40 }}
+                    keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator={false}
+                >
                     <Text style={styles.formTitle}>
                         {editing ? "Editar parámetro" : "Nuevo parámetro"}
                     </Text>
@@ -359,7 +379,7 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
-        paddingTop: 50,
+        paddingTop: 4,
         paddingHorizontal: 16,
         paddingBottom: 12,
         backgroundColor: "#fff",

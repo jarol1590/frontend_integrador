@@ -11,6 +11,7 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { HttpClient } from "@proyectointegrador/shared-infra";
 import {
   fetchDepartamentos,
@@ -84,6 +85,7 @@ async function resolveUbicacion(
 }
 
 export default function Admin() {
+  const insets = useSafeAreaInsets();
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -207,7 +209,7 @@ export default function Admin() {
   const sections = groupByRole(users);
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, paddingTop: insets.top }}>
       <ImageBackground
         source={require("../../../../packages/assets/images/MainBackground.png")}
         style={StyleSheet.absoluteFillObject}
@@ -396,7 +398,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    paddingTop: 55,
+    paddingTop: 8,
     paddingBottom: 8,
   },
   headerTitle: {
