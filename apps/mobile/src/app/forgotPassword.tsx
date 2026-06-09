@@ -8,9 +8,9 @@ import {
     StyleSheet,
     TouchableOpacity,
     Pressable,
-    Alert,
     ActivityIndicator,
 } from "react-native";
+import ResponseModal from "../components/ResponseModal";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useForm, Controller } from "react-hook-form";
@@ -26,6 +26,10 @@ type Method = null | "email" | "sms";
 export default function ForgotPassword() {
     const [method, setMethod] = useState<Method>(null);
     const [loading, setLoading] = useState(false);
+    const [modalVisible, setModalVisible] = useState(false);
+    const [modalType, setModalType] = useState<"success" | "error">("success");
+    const [modalTitle, setModalTitle] = useState("");
+    const [modalMessage, setModalMessage] = useState("");
     const { forgotPasswordUseCase } = useDependencies();
 
     const {
@@ -37,15 +41,22 @@ export default function ForgotPassword() {
         defaultValues: { email: "" },
     });
 
+    const showModal = (type: "success" | "error", title: string, message: string) => {
+        setModalType(type);
+        setModalTitle(title);
+        setModalMessage(message);
+        setModalVisible(true);
+    };
+
     const onSubmit = async (data: ForgotPasswordFormData) => {
         setLoading(true);
         try {
             if (method === "email") {
                 await forgotPasswordUseCase.execute({ email: data.email });
             }
-            router.push(`/verify-code?flow=forgot` as any);
+            router.push(`/verify-code?flow=forgot&email=${encodeURIComponent(data.email)}` as any);
         } catch (error: any) {
-            Alert.alert("Error", error.message ?? "No se pudo enviar el código.");
+            showModal("error", "Error", error.message ?? "No se pudo enviar el código.");
         } finally {
             setLoading(false);
         }
@@ -195,6 +206,7 @@ export default function ForgotPassword() {
                     )}
                 </View>
             </View>
+            <ResponseModal visible={modalVisible} type={modalType} title={modalTitle} message={modalMessage} onClose={() => setModalVisible(false)} />
         </View>
     );
 }

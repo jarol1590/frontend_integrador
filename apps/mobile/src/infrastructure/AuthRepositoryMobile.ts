@@ -34,19 +34,43 @@ export class AuthRepositoryMobile implements IAuthRepository {
         },
       }
     }
+    if (data.rolId === 2 && data.centroAcopio) {
+      body.centroAcopio = {
+        nombre: data.centroAcopio.nombre,
+        direccion: data.centroAcopio.direccion,
+        latitud: data.centroAcopio.latitud,
+        longitud: data.centroAcopio.longitud,
+        municipioId: data.centroAcopio.municipioId,
+      }
+    }
+    if (data.rolId === 4 && data.trabajador) {
+      body.trabajador = {
+        nombre: data.trabajador.nombre,
+        documento: data.trabajador.documento,
+        telefono: data.trabajador.telefono,
+        tipoDocumentoId: data.trabajador.tipoDocumentoId,
+      }
+    }
     console.log('[DEBUG AUTH REPO] POST /usuarios body:', JSON.stringify(body, null, 2))
 
     const response = await this.http.post<{
-      message?: string
+      success?: boolean
       status?: number
+      message?: string
+      errors?: string | string[]
+      response?: any
     }>('/usuarios', body)
 
-    console.log('[DEBUG AUTH REPO] POST /usuarios response status:', response.status, 'data:', JSON.stringify(response.data, null, 2))
+    console.log('[DEBUG AUTH REPO] POST /usuarios response status:', response.status, 'full data:', JSON.stringify(response.data, null, 2))
+    console.log('[DEBUG AUTH REPO] POST /usuarios response.data.success:', response.data?.success)
+    console.log('[DEBUG AUTH REPO] POST /usuarios response.data.message:', response.data?.message)
+    console.log('[DEBUG AUTH REPO] POST /usuarios response.data.errors:', response.data?.errors)
+    console.log('[DEBUG AUTH REPO] POST /usuarios response.data.response:', response.data?.response)
 
-    if (response.status >= 400) {
-      console.log('[DEBUG AUTH REPO] Error response:', JSON.stringify(response.data, null, 2))
+    if (response.status >= 400 || (response.data && 'success' in response.data && !response.data.success)) {
+      console.log('[DEBUG AUTH REPO] Error — status >= 400 or success=false')
       throw new Error(
-        response.data.message ?? 'No se pudo completar el registro',
+        response.data?.message ?? (Array.isArray(response.data?.errors) ? response.data.errors.join(', ') : response.data?.errors) ?? 'No se pudo completar el registro',
       )
     }
   }
@@ -55,20 +79,22 @@ export class AuthRepositoryMobile implements IAuthRepository {
     await this.http.post<{ message?: string }>('/auth/forgot-password', { email })
   }
 
-  async verifyResetCode(token: string): Promise<void> {
+  async verifyResetCode(email: string, code: string): Promise<{ token: string }> {
     const response = await this.http.post<{
       success: boolean
       status: number
       method: string
       errors: string | null
-      response: { message?: string } | null
-    }>('/auth/verify-reset-code', { token })
+      response: { token?: string } | null
+    }>('/auth/verify-reset-code', { token: code })
 
-    if (!response.data.success) {
+    if (!response.data.success || !response.data.response?.token) {
       throw new Error(
         response.data.errors ?? 'Código inválido',
       )
     }
+
+    return { token: response.data.response.token }
   }
 
   async resetPassword(token: string, newPassword: string): Promise<void> {
@@ -91,15 +117,13 @@ export class AuthRepositoryMobile implements IAuthRepository {
     const response = await this.http.post<{
       response?: AuthSession
       message?: string
-      errors?: string[]
+      errors?: string | string[]
     }>('/auth/login', { email, password })
 
     if (!response.data.response) {
-      throw new Error(
-        response.data.message ??
-          response.data.errors?.[0] ??
-          'Credenciales incorrectas',
-      )
+      const err = response.data.errors
+      const msg = typeof err === 'string' ? err : Array.isArray(err) ? err[0] : undefined
+      throw new Error(response.data.message ?? msg ?? 'Credenciales incorrectas')
     }
 
     const session = response.data.response

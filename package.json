@@ -6,14 +6,19 @@
     "packages/*"
   ],
   "scripts": {
-    "dev:web":    "npm run dev --workspace=apps/web",
+    "dev:web": "npm run dev --workspace=apps/web",
     "dev:mobile": "npm run start --workspace=apps/mobile",
-    "build:web":  "npm run build --workspace=apps/web",
-    "lint":       "npm run lint --workspaces --if-present",
-    "test":       "npm run test --workspaces --if-present"
+    "build:web": "npm run build --workspace=apps/web",
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present"
   },
   "overrides": {
     "react": "19.1.0",
     "react-dom": "19.1.0"
+  },
+  "dependencies": {
+    "expo-file-system": "^56.0.7",
+    "expo-sharing": "^56.0.16",
+    "react-native-qrcode-svg": "^6.3.21"
   }
 }

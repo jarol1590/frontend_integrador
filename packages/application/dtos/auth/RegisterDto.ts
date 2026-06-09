@@ -1,3 +1,5 @@
+import type { CentroAcopioProvision, TrabajadorProvision } from '@proyectointegrador/domain'
+
 export interface RegisterDto {
   email: string
   password: string
@@ -12,4 +14,6 @@ export interface RegisterDto {
   latitud?: number
   longitud?: number
   municipioId: number
+  centroAcopio?: CentroAcopioProvision | null
+  trabajador?: TrabajadorProvision | null
 }

@@ -45,6 +45,19 @@ export class AuthRepositoryWeb implements IAuthRepository {
     await this.http.post<{ message?: string }>('/auth/forgot-password', { email })
   }
 
+  async verifyResetCode(email: string, code: string): Promise<{ token: string }> {
+    const response = await this.http.post<{
+      response?: { token?: string }
+      message?: string
+    }>('/auth/verify-reset-code', { email, code })
+
+    const token = response.data.response?.token
+    if (!token) {
+      throw new Error(response.data.message ?? 'Código inválido')
+    }
+    return { token }
+  }
+
   async resetPassword(token: string, newPassword: string): Promise<void> {
     const response = await this.http.post<{
       message?: string

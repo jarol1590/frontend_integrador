@@ -6,6 +6,7 @@ export interface AuthUser {
   tipoUsuario: string
   rolNombre: string
   rolId?: number
+  centroAcopioId?: number | null
   centroAcopio?: string
 }
 
@@ -29,13 +30,30 @@ export interface RegisterRequest {
   latitud?: number
   longitud?: number
   municipioId: number
+  centroAcopio?: CentroAcopioProvision | null
+  trabajador?: TrabajadorProvision | null
+}
+
+export interface CentroAcopioProvision {
+  nombre: string
+  direccion?: string | null
+  latitud?: number | null
+  longitud?: number | null
+  municipioId: number
+}
+
+export interface TrabajadorProvision {
+  nombre: string
+  documento: string
+  telefono?: string | null
+  tipoDocumentoId: number
 }
 
 export interface IAuthRepository {
   login(email: string, password: string): Promise<AuthSession>
   register(data: RegisterRequest): Promise<void>
   forgotPassword(email: string): Promise<void>
-  verifyResetCode(token: string): Promise<void>
+  verifyResetCode(email: string, code: string): Promise<{ token: string }>
   resetPassword(token: string, newPassword: string): Promise<void>
   logout(): Promise<void>
   getSession(): Promise<AuthSession | null>

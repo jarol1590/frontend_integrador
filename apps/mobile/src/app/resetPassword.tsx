@@ -8,7 +8,6 @@ import {
     StyleSheet,
     TouchableOpacity,
     Pressable,
-    Alert,
     ActivityIndicator,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
@@ -20,10 +19,15 @@ import {
     type ResetPasswordFormData,
 } from "@proyectointegrador/application";
 import { useDependencies } from "../providers/DependencyProvider";
+import ResponseModal from "../components/ResponseModal";
 
 export default function ResetPassword() {
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+    const [modalVisible, setModalVisible] = useState(false);
+    const [modalType, setModalType] = useState<"success" | "error">("success");
+    const [modalTitle, setModalTitle] = useState("");
+    const [modalMessage, setModalMessage] = useState("");
     const { resetPasswordUseCase } = useDependencies();
     const { token: codeParam } = useLocalSearchParams<{ token: string }>();
 
@@ -36,6 +40,18 @@ export default function ResetPassword() {
         defaultValues: { token: codeParam ?? "", newPassword: "", confirmPassword: "" },
     });
 
+    const showModal = (type: "success" | "error", title: string, message: string, onClose?: () => void) => {
+        setModalType(type);
+        setModalTitle(title);
+        setModalMessage(message);
+        setModalVisible(true);
+        if (onClose) {
+            setModalCloseCallback(() => onClose);
+        }
+    };
+
+    const [modalCloseCallback, setModalCloseCallback] = useState<(() => void) | null>(null);
+
     const onSubmit = async (data: ResetPasswordFormData) => {
         setLoading(true);
         try {
@@ -43,11 +59,9 @@ export default function ResetPassword() {
                 token: data.token,
                 newPassword: data.newPassword,
             });
-            Alert.alert("Éxito", "Contraseña actualizada correctamente.", [
-                { text: "OK", onPress: () => router.replace("/login") },
-            ]);
+            showModal("success", "Éxito", "Contraseña actualizada correctamente.", () => router.replace("/login"));
         } catch (error: any) {
-            Alert.alert("Error", error.message ?? "No se pudo restablecer la contraseña.");
+            showModal("error", "Error", error.message ?? "No se pudo restablecer la contraseña.");
         } finally {
             setLoading(false);
         }
@@ -171,6 +185,7 @@ export default function ResetPassword() {
                     </Pressable>
                 </View>
             </View>
+            <ResponseModal visible={modalVisible} type={modalType} title={modalTitle} message={modalMessage} onClose={() => { setModalVisible(false); modalCloseCallback?.(); setModalCloseCallback(null); }} />
         </View>
     );
 }

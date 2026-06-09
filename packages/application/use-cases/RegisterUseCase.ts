@@ -20,6 +20,8 @@ export class RegisterUseCase {
       latitud: dto.latitud,
       longitud: dto.longitud,
       municipioId: dto.municipioId,
+      centroAcopio: dto.centroAcopio,
+      trabajador: dto.trabajador,
     })
   }
 }

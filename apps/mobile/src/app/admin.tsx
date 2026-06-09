@@ -6,7 +6,6 @@ import {
   ScrollView,
   ImageBackground,
   StyleSheet,
-  Alert,
   ActivityIndicator,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -22,6 +21,7 @@ import {
 import UserDetailModal, {
   type AdminUser,
 } from "../components/UserDetailModal";
+import ResponseModal from "../components/ResponseModal";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "";
 
@@ -90,6 +90,17 @@ export default function Admin() {
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalType, setModalType] = useState<"success" | "error">("success");
+  const [modalTitle, setModalTitle] = useState("");
+  const [modalMessage, setModalMessage] = useState("");
+
+  const showModal = (type: "success" | "error", title: string, message: string) => {
+    setModalType(type);
+    setModalTitle(title);
+    setModalMessage(message);
+    setModalVisible(true);
+  };
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -99,7 +110,7 @@ export default function Admin() {
       const list = res.data.response;
       setUsers(Array.isArray(list) ? list : []);
     } catch {
-      Alert.alert("Error", "No se pudieron cargar los usuarios");
+      showModal("error", "Error", "No se pudieron cargar los usuarios");
     }
   }, []);
 
@@ -165,11 +176,11 @@ export default function Admin() {
         body
       );
       if (res.status >= 400) throw new Error(res.data.message ?? "Error al actualizar");
-      Alert.alert("Éxito", res.data.message);
+      showModal("success", "Éxito", res.data.message);
       setSelectedUser(null);
       await fetchUsers();
     } catch (error: any) {
-      Alert.alert("Error", error.message ?? "No se pudo actualizar el usuario");
+      showModal("error", "Error", error.message ?? "No se pudo actualizar el usuario");
     } finally {
       setSaving(false);
     }
@@ -183,11 +194,11 @@ export default function Admin() {
         `/usuarios/${id}`
       );
       if (res.status >= 400) throw new Error(res.data.message ?? "Error al desactivar");
-      Alert.alert("Éxito", res.data.message);
+      showModal("success", "Éxito", res.data.message);
       setSelectedUser(null);
       await fetchUsers();
     } catch (error: any) {
-      Alert.alert("Error", error.message ?? "No se pudo desactivar el usuario");
+      showModal("error", "Error", error.message ?? "No se pudo desactivar el usuario");
     } finally {
       setDeletingId(null);
     }
@@ -365,6 +376,7 @@ export default function Admin() {
           };
         }}
       />
+      <ResponseModal visible={modalVisible} type={modalType} title={modalTitle} message={modalMessage} onClose={() => setModalVisible(false)} />
     </View>
   );
 }

@@ -14,7 +14,6 @@ import {
     TouchableOpacity,
     Pressable,
     ScrollView,
-    Alert,
     ActivityIndicator,
 } from "react-native";
 import { router } from "expo-router";
@@ -23,20 +22,26 @@ import { useDependencies } from "../providers/DependencyProvider";
 import { geocodeAddress } from "../infrastructure/geocode";
 import { fetchDepartments, fetchCitiesByDepartment, type DepartmentData, type CityData } from "../infrastructure/colombiaApi";
 import { findOrCreateDepartamento, findOrCreateMunicipio } from "../infrastructure/ubicacionApi";
+import { HttpClient } from "@proyectointegrador/shared-infra";
+import ResponseModal from "../components/ResponseModal";
+
+const API_URL = process.env.EXPO_PUBLIC_API_URL ?? ""
 
 type IdType = "CC" | "Pasaporte" | "NIT";
 
 
-const centrosAcopio = [
-    { id: "1", nombre: "Centro Acopio Norte" },
-    { id: "2", nombre: "Centro Acopio Sur" },
-    { id: "3", nombre: "Centro Acopio Central" },
-];
+const centrosAcopio: { id: string; nombre: string }[] = []
 
 export default function Register() {
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
     const [geocoding, setGeocoding] = useState(false);
+    const [centrosAcopio, setCentrosAcopio] = useState<{ id: string; nombre: string }[]>([]);
+    const [loadingCentros, setLoadingCentros] = useState(false);
+    const [modalVisible, setModalVisible] = useState(false);
+    const [modalType, setModalType] = useState<"success" | "error">("success");
+    const [modalTitle, setModalTitle] = useState("");
+    const [modalMessage, setModalMessage] = useState("");
     const { registerUseCase } = useDependencies();
 
     const {
@@ -94,9 +99,28 @@ export default function Register() {
             .then((data) => setDeptos(Array.isArray(data) ? data : []))
             .catch(() => {
                 setDeptos([])
-                Alert.alert("Error", "No se pudieron cargar los departamentos.")
+                showModal("error", "Error", "No se pudieron cargar los departamentos.")
             })
             .finally(() => setLoadingDeptos(false));
+
+        // Cargar centros de acopio
+        setLoadingCentros(true);
+        (async () => {
+            try {
+                const http = new HttpClient(API_URL)
+                const res = await http.get<any>("/centros-acopio")
+                const lista = Array.isArray(res.data) ? res.data : res.data?.response ?? []
+                setCentrosAcopio(
+                    Array.isArray(lista)
+                        ? lista.map((c: any) => ({ id: String(c.centroAcopioId ?? c.id), nombre: c.nombre }))
+                        : []
+                )
+            } catch {
+                setCentrosAcopio([])
+            } finally {
+                setLoadingCentros(false)
+            }
+        })();
     }, []);
 
     // Cargar municipios al seleccionar departamento
@@ -113,6 +137,13 @@ export default function Register() {
             .finally(() => setLoadingCities(false));
     }, [departamento, deptos]);
 
+    const showModal = (type: "success" | "error", title: string, message: string) => {
+        setModalType(type);
+        setModalTitle(title);
+        setModalMessage(message);
+        setModalVisible(true);
+    };
+
     const idTypes: IdType[] = ["CC", "Pasaporte", "NIT"];
 
     const totalSteps = role === "trabajador" ? 3 : 5;
@@ -122,8 +153,10 @@ export default function Register() {
         if (step === 2) return await trigger(["correo", "idType", "idNumber", "role"]);
         if (step === 3) {
             if (role === "trabajador") {
-                // workers validate centro + password on step 3
                 return await trigger(["centroSeleccionado", "password", "confirmPassword"]);
+            }
+            if (role === "acopio") {
+                return await trigger(["nombreLugar", "departamento", "municipio"]);
             }
             return await trigger(["nombreLugar", "departamento", "municipio"]);
         }
@@ -131,10 +164,7 @@ export default function Register() {
             const valid = await trigger(["direccion"]);
             if (!valid) return false;
             if (!getValues("latitud") || !getValues("longitud")) {
-                Alert.alert(
-                    "Ubicación",
-                    "Presiona 'Obtener ubicación' para buscar las coordenadas de la dirección.",
-                );
+                showModal("error", "Ubicación", "Presiona 'Obtener ubicación' para buscar las coordenadas de la dirección.");
                 return false;
             }
             return true;
@@ -185,29 +215,46 @@ export default function Register() {
             console.log('[DEBUG REGISTER] municipioId resuelto:', municipioId)
         }
 
+        const isProducer = rolId === 3
+        const isAcopio = rolId === 2
+        const isTrabajador = rolId === 4
         const dto = {
             email: data.correo,
             password: data.password,
+            estado: 'activo',
             rolId,
             centroAcopioId: data.centroSeleccionado ? Number(data.centroSeleccionado) : null,
-            productorNombre: `${data.nombres} ${data.apellidos}`.trim(),
-            documento: data.idNumber,
-            telefono: data.telefono,
-            tipoDocumentoId,
-            fincaNombre: data.nombreLugar || undefined,
-            direccion: data.direccion || undefined,
-            latitud: data.latitud ? Number(data.latitud) : undefined,
-            longitud: data.longitud ? Number(data.longitud) : undefined,
-            municipioId,
+            productorNombre: isProducer ? `${data.nombres} ${data.apellidos}`.trim() : '',
+            documento: isProducer ? data.idNumber : '',
+            telefono: isProducer ? data.telefono : '',
+            tipoDocumentoId: isProducer ? tipoDocumentoId : 0,
+            fincaNombre: isProducer && data.nombreLugar ? data.nombreLugar : undefined,
+            direccion: isProducer && data.direccion ? data.direccion : undefined,
+            latitud: isProducer && data.latitud ? Number(data.latitud) : undefined,
+            longitud: isProducer && data.longitud ? Number(data.longitud) : undefined,
+            municipioId: isProducer ? municipioId : 0,
+            centroAcopio: isAcopio ? {
+                nombre: data.nombreLugar || `${data.nombres} ${data.apellidos}`.trim(),
+                direccion: data.direccion || null,
+                latitud: data.latitud ? Number(data.latitud) : null,
+                longitud: data.longitud ? Number(data.longitud) : null,
+                municipioId,
+            } : null,
+            trabajador: isTrabajador ? {
+                nombre: `${data.nombres} ${data.apellidos}`.trim(),
+                documento: data.idNumber,
+                telefono: data.telefono || null,
+                tipoDocumentoId,
+            } : null,
         }
         console.log('[DEBUG REGISTER] step 2 — RegisterDto a enviar:', JSON.stringify(dto, null, 2))
 
         await registerUseCase.execute(dto)
-        console.log('[DEBUG REGISTER] step 3 — registro exitoso, redirigiendo...')
-        router.push("/verify-code?flow=register" as any);
+        console.log('[DEBUG REGISTER] step 3 — registro exitoso, redirigiendo al login...')
+        router.push("/login" as any);
     } catch (error: any) {
         console.log('[DEBUG REGISTER] step 3 — ERROR capturado:', error.message, JSON.stringify(error, null, 2))
-        Alert.alert("Error", error.message ?? "No se pudo completar el registro.");
+        showModal("error", "Error", error.message ?? "No se pudo completar el registro.");
     } finally {
         setLoading(false);
     }
@@ -381,22 +428,34 @@ export default function Register() {
                 {step === 3 && (role === "productor" || role === "acopio") && (
                     <View style={styles.card}>
                         <Text style={styles.roleTitle}>
-                            {role === "productor" ? "Información de la finca" : "Información del centro de acopio"}
+                            {role === "productor" ? "Información de la finca" : "Centro de acopio"}
                         </Text>
 
-                        <View style={[styles.inputContainer, errors.nombreLugar && styles.inputError]}>
-                            <Ionicons
-                                name={role === "productor" ? "leaf-outline" : "business-outline"}
-                                size={20} color="#555" style={styles.inputIcon} />
-                            <Controller control={control} name="nombreLugar"
-                                render={({ field: { onChange, onBlur, value } }) => (
-                                    <TextInput
-                                        placeholder={role === "productor" ? "Nombre de la finca" : "Nombre del centro de acopio"}
-                                        style={styles.input} placeholderTextColor="#666"
-                                        value={value} onChangeText={onChange} onBlur={onBlur} autoCapitalize="words" />
-                                )} />
-                        </View>
-                        {errors.nombreLugar && <Text style={styles.errorText}>{errors.nombreLugar.message}</Text>}
+                        {role === "acopio" ? (
+                            <>
+                                <View style={[styles.inputContainer, errors.nombreLugar && styles.inputError]}>
+                                    <Ionicons name="business-outline" size={20} color="#555" style={styles.inputIcon} />
+                                    <Controller control={control} name="nombreLugar"
+                                        render={({ field: { onChange, onBlur, value } }) => (
+                                            <TextInput placeholder="Nombre del centro de acopio" style={styles.input} placeholderTextColor="#666"
+                                                value={value} onChangeText={onChange} onBlur={onBlur} autoCapitalize="words" />
+                                        )} />
+                                </View>
+                                {errors.nombreLugar && <Text style={styles.errorText}>{errors.nombreLugar.message}</Text>}
+                            </>
+                        ) : (
+                            <>
+                                <View style={[styles.inputContainer, errors.nombreLugar && styles.inputError]}>
+                                    <Ionicons name="leaf-outline" size={20} color="#555" style={styles.inputIcon} />
+                                    <Controller control={control} name="nombreLugar"
+                                        render={({ field: { onChange, onBlur, value } }) => (
+                                            <TextInput placeholder="Nombre de la finca" style={styles.input} placeholderTextColor="#666"
+                                                value={value} onChangeText={onChange} onBlur={onBlur} autoCapitalize="words" />
+                                        )} />
+                                </View>
+                                {errors.nombreLugar && <Text style={styles.errorText}>{errors.nombreLugar.message}</Text>}
+                            </>
+                        )}
 
                         {/* Departamento */}
                         <TouchableOpacity style={styles.inputContainer}
@@ -484,9 +543,11 @@ export default function Register() {
                             onPress={() => setCentroOpen(!centroOpen)} activeOpacity={0.8}>
                             <Ionicons name="business-outline" size={20} color="#555" style={styles.inputIcon} />
                             <Text style={[styles.input, { color: centroSeleccionado ? "#222" : "#666", paddingVertical: 0 }]}>
-                                {centroSeleccionado
-                                    ? centrosAcopio.find(c => c.id === centroSeleccionado)?.nombre
-                                    : "Centro de acopio"}
+                                {loadingCentros
+                                    ? "Cargando..."
+                                    : (centroSeleccionado
+                                        ? centrosAcopio.find(c => c.id === centroSeleccionado)?.nombre
+                                        : "Centro de acopio")}
                             </Text>
                             <Ionicons name={centroOpen ? "chevron-up" : "chevron-down"} size={18} color="#555" />
                         </TouchableOpacity>
@@ -576,7 +637,7 @@ export default function Register() {
                                 const mun = getValues("municipio");
                                 const dep = getValues("departamento");
                                 if (!dir?.trim() || !mun || !dep) {
-                                    Alert.alert("Faltan datos", "Completa departamento, municipio y dirección primero.");
+                                    showModal("error", "Faltan datos", "Completa departamento, municipio y dirección primero.");
                                     return;
                                 }
                                 setGeocoding(true);
@@ -586,10 +647,10 @@ export default function Register() {
                                         setValue("latitud", String(result.lat));
                                         setValue("longitud", String(result.lng));
                                     } else {
-                                        Alert.alert("No encontrado", "No se pudo determinar la ubicación. Puedes continuar e ingresarla después.");
+                                        showModal("error", "No encontrado", "No se pudo determinar la ubicación. Puedes continuar e ingresarla después.");
                                     }
                                 } catch {
-                                    Alert.alert("Error", "No se pudo conectar con el servicio de mapas.");
+                                    showModal("error", "Error", "No se pudo conectar con el servicio de mapas.");
                                 } finally {
                                     setGeocoding(false);
                                 }
@@ -685,6 +746,7 @@ export default function Register() {
                     </View>
                 )}
             </ScrollView>
+            <ResponseModal visible={modalVisible} type={modalType} title={modalTitle} message={modalMessage} onClose={() => setModalVisible(false)} />
         </View>
     );
 }

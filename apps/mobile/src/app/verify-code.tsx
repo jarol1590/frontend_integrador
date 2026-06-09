@@ -9,17 +9,21 @@ import {
     StyleSheet,
     TouchableOpacity,
     Pressable,
-    Alert,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useDependencies } from "../providers/DependencyProvider";
+import ResponseModal from "../components/ResponseModal";
 
 export default function VerifyCode() {
     const [code, setCode] = useState(["", "", "", "", ""]);
     const [verifying, setVerifying] = useState(false);
+    const [modalVisible, setModalVisible] = useState(false);
+    const [modalType, setModalType] = useState<"success" | "error">("success");
+    const [modalTitle, setModalTitle] = useState("");
+    const [modalMessage, setModalMessage] = useState("");
     const inputs = useRef<(TextInput | null)[]>([]);
-    const { flow } = useLocalSearchParams<{ flow: "forgot" | "register" }>();
+    const { flow, email } = useLocalSearchParams<{ flow: "forgot" | "register"; email?: string }>();
     const { verifyResetCodeUseCase } = useDependencies();
 
     const handleChange = (text: string, index: number) => {
@@ -42,6 +46,13 @@ export default function VerifyCode() {
         }
     };
 
+    const showModal = (type: "success" | "error", title: string, message: string) => {
+        setModalType(type);
+        setModalTitle(title);
+        setModalMessage(message);
+        setModalVisible(true);
+    };
+
     const handleConfirm = async () => {
         const fullCode = code.join("");
         if (fullCode.length < 5) return;
@@ -50,10 +61,10 @@ export default function VerifyCode() {
         } else {
             setVerifying(true);
             try {
-                await verifyResetCodeUseCase.execute(fullCode);
-                router.push(`/resetPassword?token=${fullCode}` as any);
+                const token = await verifyResetCodeUseCase.execute(email ?? "", fullCode);
+                router.push(`/resetPassword?token=${token}` as any);
             } catch (error: any) {
-                Alert.alert("Código inválido", error.message ?? "El código ingresado no es válido o ha expirado.");
+                showModal("error", "Código inválido", "Código inválido, verifica en tu correo.");
             } finally {
                 setVerifying(false);
             }
@@ -141,6 +152,7 @@ export default function VerifyCode() {
                     </TouchableOpacity>
                 </View>
             </View>
+            <ResponseModal visible={modalVisible} type={modalType} title={modalTitle} message={modalMessage} onClose={() => setModalVisible(false)} />
         </View>
     );
 }

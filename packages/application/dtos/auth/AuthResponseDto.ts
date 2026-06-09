@@ -6,6 +6,7 @@ export interface UsuarioDto {
   tipoUsuario: string
   rolNombre: string
   rolId?: number
+  centroAcopioId?: number | null
   centroAcopio?: string
 }
 

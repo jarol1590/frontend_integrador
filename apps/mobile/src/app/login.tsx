@@ -8,10 +8,10 @@ import {
     ImageBackground,
     Image,
     StyleSheet,
-    Alert,
     ActivityIndicator,
 } from "react-native";
 import { router } from "expo-router";
+import ResponseModal from "../components/ResponseModal";
 import { Ionicons } from "@expo/vector-icons";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -29,20 +29,33 @@ export default function Login() {
     });
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+    const [modalVisible, setModalVisible] = useState(false);
+    const [modalType, setModalType] = useState<"success" | "error">("success");
+    const [modalTitle, setModalTitle] = useState("");
+    const [modalMessage, setModalMessage] = useState("");
     const { loginUseCase } = useDependencies();
+
+    const showModal = (type: "success" | "error", title: string, message: string) => {
+        setModalType(type);
+        setModalTitle(title);
+        setModalMessage(message);
+        setModalVisible(true);
+    };
 
     const onSubmit = async (data: LoginFormData) => {
         setLoading(true);
         try {
             const response = await loginUseCase.execute(data);
             if (response.usuario.rolNombre === "Administrador") {
-              router.push("/admin" as any);
-            }else if (response.usuario.rolNombre === "Productor"){
+                router.push("/admin" as any);
+            } else if (response.usuario.rolNombre === "Centro de Acopio" || response.usuario.rolNombre === "Trabajador Centro de acopio") {
+                router.push("/dashboard-centro" as any);
+            } else {
                 router.push("/dashboard" as any);
             }
-            Alert.alert("Bienvenido ", response.usuario.email);
+            showModal("success", "Bienvenido", response.usuario.email);
         } catch (error: any) {
-            Alert.alert("Error", error.message ?? "No se pudo iniciar sesión.");
+            showModal("error", "Error", error.message ?? "No se pudo iniciar sesión.");
         } finally {
             setLoading(false);
         }
@@ -176,6 +189,7 @@ export default function Login() {
                     </View>
                 </View>
             </View>
+            <ResponseModal visible={modalVisible} type={modalType} title={modalTitle} message={modalMessage} onClose={() => setModalVisible(false)} />
         </View>
     );
 }

@@ -11,6 +11,7 @@ import {
     Modal,
     TextInput,
     FlatList,
+    ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -18,6 +19,8 @@ import { Calendar, LocaleConfig } from "react-native-calendars";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { HttpClient } from "@proyectointegrador/shared-infra";
 import ChatModal from "../components/ChatModal";
+import ParametroCircularChart from "../components/ParametroCircularChart";
+import { getMiPerfil, getAnalisisPorFinca, AnalisisPorFinca } from "../infrastructure/dashboardApi";
 
 // ─── Configuración español ─────────────────────────────────
 LocaleConfig.locales["es"] = {
@@ -55,6 +58,9 @@ const STORAGE_KEY = "lacticontrol_events";
 export default function Dashboard() {
     const [activeTab, setActiveTab] = useState<"home" | "chat" | "user">("home");
     const [userName, setUserName] = useState("");
+    const [userRole, setUserRole] = useState("productor");
+    const [analisisList, setAnalisisList] = useState<AnalisisPorFinca[]>([]);
+    const [loadingAnalisis, setLoadingAnalisis] = useState(true);
 
     // Calendario
     const [events, setEvents] = useState<Event[]>([]);
@@ -74,6 +80,13 @@ export default function Dashboard() {
                 if (userJson) {
                     const user = JSON.parse(userJson);
                     setUserName(user.email ?? "");
+                    const roleMap: Record<string, string> = {
+                        "Administrador": "administrador",
+                        "Centro de Acopio": "centro_acopio",
+                        "Productor": "productor",
+                        "Trabajador Centro de acopio": "trabajador_centro_acopio",
+                    };
+                    setUserRole(roleMap[user.rolNombre] ?? "productor");
                     if (user.usuarioId && token) {
                         const http = new HttpClient(process.env.EXPO_PUBLIC_API_URL ?? "", token);
                         const res = await http.get<{ response: { productor?: { nombre: string } } }>(
@@ -84,8 +97,26 @@ export default function Dashboard() {
                         }
                     }
                 }
+
+                // Cargar perfil con fincas y análisis
+                const perfil = await getMiPerfil();
+                if (perfil.tipoUsuario?.toLowerCase() !== "productor") {
+                    setLoadingAnalisis(false);
+                    return;
+                }
+                setUserName(perfil.productor.nombre);
+
+                const todo: Promise<AnalisisPorFinca[]>[] = perfil.fincas.map(f =>
+                    getAnalisisPorFinca(f.fincaId)
+                );
+                const resultados = await Promise.all(todo);
+                const flat = resultados.flat();
+                flat.sort((a, b) => new Date(b.fechaAnalisis).getTime() - new Date(a.fechaAnalisis).getTime());
+                setAnalisisList(flat);
             } catch (e) {
                 console.log("Error cargando usuario:", e);
+            } finally {
+                setLoadingAnalisis(false);
             }
         };
         loadUser();
@@ -201,33 +232,85 @@ export default function Dashboard() {
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
             >
-                {/* CALIDAD DE LECHE — placeholder */}
-                <View style={styles.card}>
-                    <Text style={styles.cardTitle}>Calidad de leche</Text>
-                    <Text style={styles.placeholderText}>Aquí se mostrará la calidad de la leche</Text>
-                </View>
-
-                {/* GRÁFICO DE BARRAS — placeholder */}
-                <View style={styles.card}>
-                    <Text style={styles.cardTitle}>Calidad de leche por mes</Text>
-                    <Text style={styles.placeholderText}>Gráfico de barras próximamente</Text>
-                </View>
-
-                {/* FINCAS + CARACTERÍSTICAS — placeholder */}
-                <View style={styles.bottomSection}>
-                    <View style={styles.farmList}>
-                        <View style={styles.farmItem}>
-                            <View style={styles.farmAvatar}>
-                                <Ionicons name="leaf-outline" size={18} color="#555" />
-                            </View>
-                            <Text style={styles.farmName}>Fincas</Text>
+            {/* CALIDAD DE LECHE */}
+            {userRole === "productor" && (
+                <>
+                    {loadingAnalisis ? (
+                        <View style={styles.card}>
+                            <Text style={styles.cardTitle}>Calidad de leche</Text>
+                            <ActivityIndicator size="large" color="#6eaaff" style={{ paddingVertical: 20 }} />
                         </View>
+                    ) : analisisList.length === 0 ? (
+                        <View style={styles.card}>
+                            <Text style={styles.cardTitle}>Calidad de leche</Text>
+                            <Text style={styles.placeholderText}>Aún no hay análisis registrados</Text>
+                        </View>
+                    ) : (
+                        <>
+                            {/* Último análisis */}
+                            <View style={styles.card}>
+                                <Text style={styles.cardTitle}>Último análisis</Text>
+                                <Text style={styles.analisisFecha}>
+                                    {new Date(analisisList[0].fechaAnalisis).toLocaleDateString("es-CO", {
+                                        year: "numeric", month: "long", day: "numeric"
+                                    })} — {analisisList[0].fincaNombre} (Lote #{analisisList[0].loteId})
+                                </Text>
+                                <View style={styles.resultadosSummary}>
+                                    {analisisList[0].resultados.map((r, i) => (
+                                        <View key={i} style={styles.resultadoItem}>
+                                            <View style={[
+                                                styles.statusDot,
+                                                { backgroundColor: r.dentroDeRango ? "#27ae60" : "#e74c3c" }
+                                            ]} />
+                                            <Text style={styles.resultadoNombre}>{r.parametroNombre}</Text>
+                                            <Text style={styles.resultadoValor}>
+                                                {r.valorResultado}{r.unidad ? ` ${r.unidad}` : ""}
+                                            </Text>
+                                        </View>
+                                    ))}
+                                </View>
+                            </View>
+
+                            {/* Gráficos circulares por parámetro */}
+                            <View style={styles.card}>
+                                <Text style={styles.cardTitle}>Parámetros evaluados</Text>
+                                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chartsRow}>
+                                    {analisisList[0].resultados.map((r, i) => (
+                                        <ParametroCircularChart
+                                            key={i}
+                                            parametroNombre={r.parametroNombre}
+                                            unidad={r.unidad}
+                                            valorResultado={r.valorResultado}
+                                            valorMinimo={r.valorMinimo}
+                                            valorMaximo={r.valorMaximo}
+                                        />
+                                    ))}
+                                </ScrollView>
+                            </View>
+                        </>
+                    )}
+                </>
+            )}
+
+                {/* ACCIONES POR ROL */}
+                {userRole === "centro_acopio" && (
+                    <View style={styles.actionsRow}>
+                        <TouchableOpacity style={styles.actionCard} onPress={() => router.push("/parametros" as any)}>
+                            <Ionicons name="flask-outline" size={28} color="#2980b9" />
+                            <Text style={styles.actionCardTitle}>Gestionar parámetros</Text>
+                            <Text style={styles.actionCardDesc}>Agregar o quitar campos del formulario de calidad</Text>
+                        </TouchableOpacity>
                     </View>
-                    <View style={styles.statsCard}>
-                        <Text style={styles.cardTitle}>Características</Text>
-                        <Text style={styles.placeholderText}>Selecciona una finca para ver sus características</Text>
+                )}
+                {(userRole === "trabajador_centro_acopio") && (
+                    <View style={styles.actionsRow}>
+                        <TouchableOpacity style={styles.actionCard} onPress={() => router.push("/analisis" as any)}>
+                            <Ionicons name="analytics-outline" size={28} color="#27ae60" />
+                            <Text style={styles.actionCardTitle}>Nuevo análisis de calidad</Text>
+                            <Text style={styles.actionCardDesc}>Registrar valores de parámetros para un lote</Text>
+                        </TouchableOpacity>
                     </View>
-                </View>
+                )}
 
                 {/* CALENDARIO */}
                 <View style={styles.card}>
@@ -305,12 +388,28 @@ export default function Dashboard() {
                         Home
                     </Text>
                 </TouchableOpacity>
+
+                {userRole === "productor" && (
+                    <TouchableOpacity style={styles.tabItem} onPress={() => router.push("/ordenos" as any)}>
+                        <Ionicons name="water-outline" size={24} color="#888" />
+                        <Text style={styles.tabLabel}>Ordeño</Text>
+                    </TouchableOpacity>
+                )}
+
                 <TouchableOpacity style={styles.tabCenter} onPress={handleChat}>
                     <Image
                         source={require("../../../../packages/assets/images/CallCow.png")}
                         style={styles.tabCowImage}
                     />
                 </TouchableOpacity>
+
+                {userRole === "productor" && (
+                    <TouchableOpacity style={styles.tabItem} onPress={() => router.push("/lotes" as any)}>
+                        <Ionicons name="cube-outline" size={24} color="#888" />
+                        <Text style={styles.tabLabel}>Lotes</Text>
+                    </TouchableOpacity>
+                )}
+
                 <TouchableOpacity style={styles.tabItem} onPress={() => setActiveTab("user")}>
                     <Ionicons
                         name={activeTab === "user" ? "person" : "person-outline"}
@@ -468,6 +567,37 @@ const styles = StyleSheet.create({
     statName: { fontSize: 14, color: "#333", fontWeight: "500" },
     pieWrapper: { width: 56, height: 56, alignItems: "center", justifyContent: "center" },
     pieLabel: { fontSize: 10, fontWeight: "bold", color: "#333" },
+    // Análisis de calidad
+    analisisFecha: { fontSize: 12, color: "#666", marginBottom: 10 },
+    resultadosSummary: { gap: 8 },
+    resultadoItem: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 8,
+        backgroundColor: "#f8f8f8",
+        borderRadius: 10,
+        padding: 8,
+    },
+    statusDot: { width: 10, height: 10, borderRadius: 5 },
+    resultadoNombre: { fontSize: 13, color: "#333", flex: 1 },
+    resultadoValor: { fontSize: 13, fontWeight: "bold", color: "#444" },
+    chartsRow: { gap: 12, paddingVertical: 4 },
+    // Acciones por rol
+    actionsRow: { marginBottom: 8 },
+    actionCard: {
+        backgroundColor: "rgba(255,255,255,0.97)",
+        borderRadius: 20,
+        padding: 18,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 14,
+        elevation: 2,
+        shadowColor: "#000",
+        shadowOpacity: 0.08,
+        shadowRadius: 4,
+    },
+    actionCardTitle: { fontSize: 15, fontWeight: "bold", color: "#222", flex: 1 },
+    actionCardDesc: { fontSize: 11, color: "#888", flex: 1 },
     // Calendario
     dayEventsContainer: {
         marginTop: 16,
