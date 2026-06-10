@@ -31,10 +31,16 @@
         {
           "root": "src/app"
         }
-      ]
+      ],
+      "expo-notifications"
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+  "eas": {
+    "projectId": "d4733079-7669-486f-b0e4-1ff70c7d38ad"
+  }
+}
   }
 }

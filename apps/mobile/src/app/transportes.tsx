@@ -4,12 +4,12 @@ import {
     Text,
     StyleSheet,
     TouchableOpacity,
-    SafeAreaView,
     FlatList,
     ImageBackground,
     ActivityIndicator,
     Modal,
 } from "react-native"
+import { SafeAreaView } from "react-native-safe-area-context"
 import { Ionicons } from "@expo/vector-icons"
 import { router } from "expo-router"
 import AsyncStorage from "@react-native-async-storage/async-storage"
@@ -77,7 +77,7 @@ export default function Transportes() {
     }
 
     return (
-        <SafeAreaView style={styles.safeArea}>
+        <SafeAreaView style={styles.safeArea} edges={['top', 'right', 'left']}>
             <ImageBackground
                 source={require("../../../../packages/assets/images/MainBackground.png")}
                 style={StyleSheet.absoluteFillObject}

@@ -9,7 +9,11 @@ import {
     StyleSheet,
     TouchableOpacity,
     Pressable,
+    Platform,
+    KeyboardAvoidingView,
+    ScrollView,
 } from "react-native";
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useDependencies } from "../providers/DependencyProvider";
@@ -72,7 +76,7 @@ export default function VerifyCode() {
     };
 
     return (
-        <View style={{ flex: 1 }}>
+        <SafeAreaView style={{ flex: 1 }} edges={['top', 'right', 'left']}>
             <ImageBackground
                 source={require("../../../../packages/assets/images/MainBackground.png")}
                 style={StyleSheet.absoluteFillObject}
@@ -80,80 +84,84 @@ export default function VerifyCode() {
                 imageStyle={{
                     transform: [
                         { scale: 1.5 },
-                        { translateY: 285 },
+                        { translateY: 330 },
                     ],
                 }}
             />
 
-            <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-                <Ionicons name="arrow-back" size={24} color="#000" />
-            </TouchableOpacity>
-
-            <View style={styles.container}>
-                {/* Logo */}
-                <View style={styles.logoContainer}>
-                    <Image
-                        source={require("../../../../packages/assets/images/ForgotP.png")}
-                        style={styles.logo}
-                    />
-                </View>
-
-                <Text style={styles.title}>¿Olvidaste tu contraseña?</Text>
-                <Text style={styles.subtitle}>
-                    Ingresa el código que enviamos a tu número de teléfono
-                </Text>
-
-                <View style={styles.card}>
-                    {/* Cajitas OTP */}
-                    <View style={styles.otpContainer}>
-                        {code.map((digit, index) => (
-                            <TextInput
-                                key={index}
-                                ref={(ref) => { inputs.current[index] = ref; }}
-                                style={[
-                                    styles.otpInput,
-                                    digit ? styles.otpInputFilled : null,
-                                ]}
-                                value={digit}
-                                onChangeText={(text) => handleChange(text, index)}
-                                onKeyPress={(e) => handleKeyPress(e, index)}
-                                keyboardType="number-pad"
-                                maxLength={1}
-                                textAlign="center"
-                                selectTextOnFocus
-                            />
-                        ))}
-                    </View>
-
-                    {/* Botón confirmar */}
-                    <Pressable
-                        onPress={handleConfirm}
-                        disabled={verifying}
-                        style={({ pressed }) => [
-                            styles.button,
-                            {
-                                transform: [
-                                    { scale: pressed ? 0.95 : 1 },
-                                    { translateY: pressed ? 2 : 0 },
-                                ],
-                                opacity: pressed || verifying ? 0.7 : 1,
-                            },
-                        ]}
-                    >
-                        <Text style={styles.buttonText}>{verifying ? "VERIFICANDO..." : "CONFIRMAR"}</Text>
-                    </Pressable>
-
-                    {/* Reenviar código */}
-                    <TouchableOpacity onPress={() => console.log("Reenviar código")}>
-                        <Text style={styles.resend}>
-                            ¿No recibiste el código?{" "}
-                            <Text style={styles.resendLink}>Reenviar</Text>
-                        </Text>
+            <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+                <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
+                    <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+                        <Ionicons name="arrow-back" size={24} color="#000" />
                     </TouchableOpacity>
-                </View>
-            </View>
+
+                    <View style={styles.container}>
+                        {/* Logo */}
+                        <View style={styles.logoContainer}>
+                            <Image
+                                source={require("../../../../packages/assets/images/ForgotP.png")}
+                                style={styles.logo}
+                            />
+                        </View>
+
+                        <Text style={styles.title}>¿Olvidaste tu contraseña?</Text>
+                        <Text style={styles.subtitle}>
+                            Ingresa el código que enviamos a tu número de teléfono
+                        </Text>
+
+                        <View style={styles.card}>
+                            {/* Cajitas OTP */}
+                            <View style={styles.otpContainer}>
+                                {code.map((digit, index) => (
+                                    <TextInput
+                                        key={index}
+                                        ref={(ref) => { inputs.current[index] = ref; }}
+                                        style={[
+                                            styles.otpInput,
+                                            digit ? styles.otpInputFilled : null,
+                                        ]}
+                                        value={digit}
+                                        onChangeText={(text) => handleChange(text, index)}
+                                        onKeyPress={(e) => handleKeyPress(e, index)}
+                                        keyboardType="number-pad"
+                                        maxLength={1}
+                                        textAlign="center"
+                                        selectTextOnFocus
+                                    />
+                                ))}
+                            </View>
+
+                            {/* Botón confirmar */}
+                            <Pressable
+                                onPress={handleConfirm}
+                                disabled={verifying}
+                                style={({ pressed }) => [
+                                    styles.button,
+                                    {
+                                        transform: [
+                                            { scale: pressed ? 0.95 : 1 },
+                                            { translateY: pressed ? 2 : 0 },
+                                        ],
+                                        opacity: pressed || verifying ? 0.7 : 1,
+                                    },
+                                ]}
+                            >
+                                <Text style={styles.buttonText}>{verifying ? "VERIFICANDO..." : "CONFIRMAR"}</Text>
+                            </Pressable>
+
+                            {/* Reenviar código */}
+                            <TouchableOpacity onPress={() => console.log("Reenviar código")}>
+                                <Text style={styles.resend}>
+                                    ¿No recibiste el código?{" "}
+                                    <Text style={styles.resendLink}>Reenviar</Text>
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </ScrollView>
+            </KeyboardAvoidingView>
             <ResponseModal visible={modalVisible} type={modalType} title={modalTitle} message={modalMessage} onClose={() => setModalVisible(false)} />
-        </View>
+        </SafeAreaView>
     );
 }
 
@@ -176,7 +184,7 @@ const styles = StyleSheet.create({
     logoContainer: {
         width: 200,
         height: 200,
-        marginBottom: 80,
+        marginBottom: 16,
     },
     logo: {
         width: "100%",
@@ -185,7 +193,7 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 24,
         fontWeight: "bold",
-        marginBottom: 10,
+        marginBottom: 5,
         textAlign: "center",
     },
     subtitle: {
@@ -198,7 +206,7 @@ const styles = StyleSheet.create({
     },
     card: {
         width: "100%",
-        backgroundColor: "rgba(255,255,255,0.9)",
+        backgroundColor: "rgb(255,255,255)",
         borderRadius: 20,
         padding: 25,
         alignItems: "center",

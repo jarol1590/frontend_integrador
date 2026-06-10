@@ -6,14 +6,16 @@ import {
     StyleSheet,
     TouchableOpacity,
     ScrollView,
-    SafeAreaView,
     ImageBackground,
 } from "react-native"
+import { SafeAreaView } from "react-native-safe-area-context"
 import { Ionicons } from "@expo/vector-icons"
 import { router } from "expo-router"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { HttpClient } from "@proyectointegrador/shared-infra"
+import { eliminarTokenPush } from "../infrastructure/notificacionesApi"
 import ChatModal from "../components/ChatModal"
+import TrabajadoresModal from "../components/TrabajadoresModal"
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? ""
 
@@ -23,6 +25,8 @@ export default function DashboardCentro() {
     const [centroNombre, setCentroNombre] = useState("")
     const [centroDireccion, setCentroDireccion] = useState("")
     const [chatVisible, setChatVisible] = useState(false)
+    const [trabajadoresVisible, setTrabajadoresVisible] = useState(false)
+    const [centroAcopioId, setCentroAcopioId] = useState<number | null>(null)
 
     useEffect(() => {
         loadUser()
@@ -39,7 +43,24 @@ export default function DashboardCentro() {
             setUserName(user.email ?? "")
             setUserRole(user.rolNombre ?? "")
 
+            // Obtener nombre real según el rol
+            if (user.usuarioId && token) {
+                try {
+                    const http = new HttpClient(API_URL, token)
+                    const res = await http.get<any>(`/usuarios/public/${user.usuarioId}`)
+                    const data = res.data?.response ?? res.data
+                    if (data?.trabajador?.nombre) {
+                        setUserName(data.trabajador.nombre)
+                    } else if (data?.centroAcopio?.nombre) {
+                        setUserName(data.centroAcopio.nombre)
+                    } else if (data?.productor?.nombre) {
+                        setUserName(data.productor.nombre)
+                    }
+                } catch { /* fallback a email */ }
+            }
+
             if (user.centroAcopioId && token) {
+                setCentroAcopioId(user.centroAcopioId)
                 const http = new HttpClient(API_URL, token)
                 const res = await http.get<{ response?: { nombre: string; direccion?: string } }>(
                     `/centros-acopio/${user.centroAcopioId}`
@@ -54,7 +75,7 @@ export default function DashboardCentro() {
     }
 
     return (
-        <SafeAreaView style={styles.safeArea}>
+        <SafeAreaView style={styles.safeArea} edges={['top', 'right', 'left']}>
             <ImageBackground
                 source={require("../../../../packages/assets/images/MainBackground.png")}
                 style={StyleSheet.absoluteFillObject}
@@ -69,16 +90,23 @@ export default function DashboardCentro() {
             <View style={styles.header}>
                 <View style={styles.headerLeft}>
                     <View style={styles.avatarContainer}>
-                        <Ionicons name="business-outline" size={24} color="#555" />
+                        <Ionicons name={userRole === "Trabajador Centro de acopio" ? "construct-outline" : "business-outline"} size={24} color="#555" />
                     </View>
                     <View>
-                        <Text style={styles.greeting}>Centro de acopio</Text>
+                        <Text style={styles.greeting}>{userRole === "Trabajador Centro de acopio" ? "Trabajador" : "Centro de acopio"}</Text>
                         <Text style={styles.userName}>{userName}</Text>
                     </View>
                 </View>
                 <View style={styles.headerRight}>
-                    <TouchableOpacity style={styles.iconButton} onPress={() => router.push("/qr-scanner" as any)}>
-                        <Ionicons name="qr-code-outline" size={22} color="#555" />
+                    <TouchableOpacity style={styles.logoutButton} onPress={async () => {
+                        const pushToken = await AsyncStorage.getItem("expoPushToken")
+                        if (pushToken) {
+                            try { await eliminarTokenPush(pushToken) } catch { }
+                        }
+                        await AsyncStorage.multiRemove(["token", "usuario", "expoPushToken"]);
+                        router.push("/login" as any);
+                    }}>
+                        <Ionicons name="log-out-outline" size={22} color="#e74c3c" />
                     </TouchableOpacity>
                 </View>
             </View>
@@ -117,27 +145,31 @@ export default function DashboardCentro() {
                     </TouchableOpacity>
                 ) : null}
 
-                <TouchableOpacity style={styles.actionCard} onPress={() => router.push("/analisis" as any)}>
-                    <View style={[styles.actionIcon, { backgroundColor: "#e8f8e8" }]}>
-                        <Ionicons name="analytics-outline" size={24} color="#27ae60" />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                        <Text style={styles.actionTitle}>Nuevo análisis</Text>
-                        <Text style={styles.actionDesc}>Registrar valores de calidad para un lote</Text>
-                    </View>
-                    <Ionicons name="chevron-forward" size={20} color="#ccc" />
-                </TouchableOpacity>
+                {userRole === "Trabajador Centro de acopio" ? (
+                    <TouchableOpacity style={styles.actionCard} onPress={() => router.push("/analisis" as any)}>
+                        <View style={[styles.actionIcon, { backgroundColor: "#e8f8e8" }]}>
+                            <Ionicons name="analytics-outline" size={24} color="#27ae60" />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.actionTitle}>Nuevo análisis</Text>
+                            <Text style={styles.actionDesc}>Registrar valores de calidad para un lote</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={20} color="#ccc" />
+                    </TouchableOpacity>
+                ) : null}
 
-                <TouchableOpacity style={styles.actionCard} onPress={() => router.push("/transportes" as any)}>
-                    <View style={[styles.actionIcon, { backgroundColor: "#fef3e2" }]}>
-                        <Ionicons name="car-outline" size={24} color="#e67e22" />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                        <Text style={styles.actionTitle}>Transportes</Text>
-                        <Text style={styles.actionDesc}>Ver transportes abiertos y completados</Text>
-                    </View>
-                    <Ionicons name="chevron-forward" size={20} color="#ccc" />
-                </TouchableOpacity>
+                {userRole === "Trabajador Centro de acopio" ? (
+                    <TouchableOpacity style={styles.actionCard} onPress={() => router.push("/transportes" as any)}>
+                        <View style={[styles.actionIcon, { backgroundColor: "#fef3e2" }]}>
+                            <Ionicons name="car-outline" size={24} color="#e67e22" />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.actionTitle}>Transportes</Text>
+                            <Text style={styles.actionDesc}>Ver transportes abiertos y completados</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={20} color="#ccc" />
+                    </TouchableOpacity>
+                ) : null}
 
                 {/* CALENDARIO */}
                 <Text style={styles.sectionTitle}>Calendario</Text>
@@ -155,19 +187,30 @@ export default function DashboardCentro() {
                     <Ionicons name="home" size={24} color="#000" />
                     <Text style={[styles.tabLabel, styles.tabLabelActive]}>Home</Text>
                 </TouchableOpacity>
+                <TouchableOpacity style={styles.tabItem} onPress={() => router.push("/riesgo-regional" as any)}>
+                    <Ionicons name="flame-outline" size={24} color="#e67e22" />
+                    <Text style={styles.tabLabel}>R. Regional</Text>
+                </TouchableOpacity>
                 <TouchableOpacity style={styles.tabCenter} onPress={() => setChatVisible(true)}>
                     <Image
                         source={require("../../../../packages/assets/images/CallCow.png")}
                         style={styles.tabCowImage}
                     />
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.tabItem} onPress={() => {}}>
-                    <Ionicons name="person-outline" size={24} color="#888" />
-                    <Text style={styles.tabLabel}>User</Text>
+                <TouchableOpacity style={styles.tabItem} onPress={() => setTrabajadoresVisible(true)}>
+                    <Ionicons name="people-outline" size={24} color="#888" />
+                    <Text style={styles.tabLabel}>Trabajadores</Text>
                 </TouchableOpacity>
             </View>
 
             <ChatModal visible={chatVisible} onClose={() => setChatVisible(false)} />
+            {centroAcopioId && (
+                <TrabajadoresModal
+                    visible={trabajadoresVisible}
+                    centroAcopioId={centroAcopioId}
+                    onClose={() => setTrabajadoresVisible(false)}
+                />
+            )}
         </SafeAreaView>
     )
 }
@@ -201,6 +244,14 @@ const styles = StyleSheet.create({
         height: 38,
         borderRadius: 19,
         backgroundColor: "#ddd",
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    logoutButton: {
+        width: 38,
+        height: 38,
+        borderRadius: 19,
+        backgroundColor: "rgba(231,76,60,0.1)",
         alignItems: "center",
         justifyContent: "center",
     },

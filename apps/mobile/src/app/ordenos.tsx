@@ -5,12 +5,15 @@ import {
     StyleSheet,
     TouchableOpacity,
     TextInput,
-    SafeAreaView,
     FlatList,
     ActivityIndicator,
     ImageBackground,
     Modal,
+    Platform,
+    KeyboardAvoidingView,
+    ScrollView,
 } from "react-native"
+import { SafeAreaView } from "react-native-safe-area-context"
 import { Ionicons } from "@expo/vector-icons"
 import { router } from "expo-router"
 import QRCode from "react-native-qrcode-svg"
@@ -115,7 +118,7 @@ export default function Ordenos() {
     }
 
     return (
-        <SafeAreaView style={styles.safeArea}>
+        <SafeAreaView style={styles.safeArea} edges={['top', 'right', 'left']}>
             <ImageBackground
                 source={require("../../../../packages/assets/images/MainBackground.png")}
                 style={StyleSheet.absoluteFillObject}
@@ -133,35 +136,39 @@ export default function Ordenos() {
             </View>
 
             {screen === "create" ? (
-                <View style={styles.content}>
-                    <View style={styles.formCard}>
-                        <Text style={styles.cardTitle}>Registrar ordeño</Text>
-                        <Text style={styles.formLabel}>Finca: {finca?.nombre ?? "---"}</Text>
-                        <Text style={styles.formLabel}>Volumen capturado (litros)</Text>
-                        <TextInput
-                            style={styles.input}
-                            keyboardType="decimal-pad"
-                            placeholder="Ej: 150.5"
-                            placeholderTextColor="#aaa"
-                            value={volumen}
-                            onChangeText={setVolumen}
-                        />
-                        <TouchableOpacity
-                            style={[styles.submitBtn, (!volumen || creating) && { opacity: 0.5 }]}
-                            onPress={handleCrearOrdeneo}
-                            disabled={!volumen || creating}
-                        >
-                            {creating ? (
-                                <ActivityIndicator color="#fff" />
-                            ) : (
-                                <Text style={styles.submitBtnText}>Registrar ordeño</Text>
-                            )}
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={() => setScreen("list")} style={{ paddingVertical: 8 }}>
-                            <Text style={styles.cancelText}>Cancelar</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
+                <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+                    <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
+                        <View style={styles.content}>
+                            <View style={styles.formCard}>
+                                <Text style={styles.cardTitle}>Registrar ordeño</Text>
+                                <Text style={styles.formLabel}>Finca: {finca?.nombre ?? "---"}</Text>
+                                <Text style={styles.formLabel}>Volumen capturado (litros)</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    keyboardType="decimal-pad"
+                                    placeholder="Ej: 150.5"
+                                    placeholderTextColor="#aaa"
+                                    value={volumen}
+                                    onChangeText={setVolumen}
+                                />
+                                <TouchableOpacity
+                                    style={[styles.submitBtn, (!volumen || creating) && { opacity: 0.5 }]}
+                                    onPress={handleCrearOrdeneo}
+                                    disabled={!volumen || creating}
+                                >
+                                    {creating ? (
+                                        <ActivityIndicator color="#fff" />
+                                    ) : (
+                                        <Text style={styles.submitBtnText}>Registrar ordeño</Text>
+                                    )}
+                                </TouchableOpacity>
+                                <TouchableOpacity onPress={() => setScreen("list")} style={{ paddingVertical: 8 }}>
+                                    <Text style={styles.cancelText}>Cancelar</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </ScrollView>
+                </KeyboardAvoidingView>
             ) : (
                 <>
                     <TouchableOpacity style={styles.addBtn} onPress={() => setScreen("create")}>

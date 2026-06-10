@@ -7,6 +7,7 @@ import {
   RegisterUseCase,
   ForgotPasswordUseCase,
   ResetPasswordUseCase,
+  VerifyResetCodeUseCase,
 } from '@proyectointegrador/application'
 import { UserRepositoryWeb } from '../infrastructure/UserRepositoryWeb'
 import { AuthRepositoryWeb } from '../infrastructure/AuthRepositoryWeb'
@@ -21,6 +22,7 @@ interface Dependencies {
   registerUseCase:        RegisterUseCase
   forgotPasswordUseCase:  ForgotPasswordUseCase
   resetPasswordUseCase:   ResetPasswordUseCase
+  verifyResetCodeUseCase: VerifyResetCodeUseCase
 }
 
 const DependencyContext = createContext<Dependencies | null>(null)
@@ -33,6 +35,7 @@ export function DependencyProvider({ children }: { children: ReactNode }) {
     registerUseCase:        new RegisterUseCase(authRepository),
     forgotPasswordUseCase:  new ForgotPasswordUseCase(authRepository),
     resetPasswordUseCase:   new ResetPasswordUseCase(authRepository),
+    verifyResetCodeUseCase: new VerifyResetCodeUseCase(authRepository),
   }
 
   return (

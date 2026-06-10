@@ -38,6 +38,18 @@ DI: each app has a React Context `DependencyProvider` (`src/providers/Dependency
 - Root `package.json` `overrides` pins `react` and `react-dom` to `19.1.0`.
 - Web lint: `eslint src` with `eslint-config-next` (no local config file). Mobile lint: `expo lint` via `eslint.config.js` with `eslint-config-expo`.
 
+## Riesgo Regional (Fase 1 — Heat map por tarjetas)
+
+Backend endpoint `GET /api/centros-acopio/{id}/gemelo/riesgo-regional` devuelve `CentroAcopioRiesgoRegionalDto` con lista de fincas y score promedio.
+
+Frontend:
+- **Mobile**: `apps/mobile/src/app/riesgo-regional.tsx` — pantalla con tarjetas de fincas agrupadas por municipio, gradiente de color por score (rojo ≥ 60, amarillo ≥ 30, verde < 30), score bar + conteo alertas + temperatura. Tap en finca → navega a `/gemelo?fincaId=X`.
+- **Mobile**: Botón "R. Regional" en bottom bar de `dashboard-centro.tsx`.
+- **Web**: `apps/web/src/app/riesgo-regional/page.tsx` — misma funcionalidad con Tailwind.
+- **Web**: Nav item "Riesgo Regional" en `AppLayout.tsx` para roles `centro_acopio` y `trabajador_centro_acopio`.
+
+El `gemelo.tsx` (mobile) y `gemelo/page.tsx` (web) aceptan `fincaId` y `fincaNombre` como query params para drill-down desde riesgo-regional.
+
 ## Migration / codegen
 
 None.

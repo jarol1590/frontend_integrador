@@ -11,7 +11,7 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { HttpClient } from "@proyectointegrador/shared-infra";
 import {
   fetchDepartamentos,
@@ -85,7 +85,6 @@ async function resolveUbicacion(
 }
 
 export default function Admin() {
-  const insets = useSafeAreaInsets();
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -209,7 +208,7 @@ export default function Admin() {
   const sections = groupByRole(users);
 
   return (
-    <View style={{ flex: 1, paddingTop: insets.top }}>
+    <SafeAreaView style={{ flex: 1 }} edges={['top', 'right', 'left']}>
       <ImageBackground
         source={require("../../../../packages/assets/images/MainBackground.png")}
         style={StyleSheet.absoluteFillObject}
@@ -379,7 +378,7 @@ export default function Admin() {
         }}
       />
       <ResponseModal visible={modalVisible} type={modalType} title={modalTitle} message={modalMessage} onClose={() => setModalVisible(false)} />
-    </View>
+    </SafeAreaView>
   );
 }
 

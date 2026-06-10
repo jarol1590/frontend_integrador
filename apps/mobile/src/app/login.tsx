@@ -9,18 +9,20 @@ import {
     Image,
     StyleSheet,
     ActivityIndicator,
+    Platform,
+    KeyboardAvoidingView,
+    ScrollView,
 } from "react-native";
 import { router } from "expo-router";
 import ResponseModal from "../components/ResponseModal";
 import { Ionicons } from "@expo/vector-icons";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { loginSchema, type LoginFormData } from "@proyectointegrador/application";
 import { useDependencies } from "../providers/DependencyProvider";
 
 export default function Login() {
-    const insets = useSafeAreaInsets();
     const {
         control,
         handleSubmit,
@@ -72,7 +74,7 @@ export default function Login() {
     };
 
     return (
-        <View style={{ flex: 1, paddingTop: insets.top }}>
+        <SafeAreaView style={{ flex: 1 }} edges={['top', 'right', 'left']}>
             <ImageBackground
                 source={require("../../../../packages/assets/images/MainBackground.png")}
                 style={StyleSheet.absoluteFillObject}
@@ -82,7 +84,9 @@ export default function Login() {
                     opacity: 0.50
                 }}
             />
-            <View style={styles.container}>
+            <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+                <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
+                    <View style={styles.container}>
                 <View style={styles.logoContainer}>
                     <Image
                         source={require("../../../../packages/assets/images/WelcomeCow.png")}
@@ -190,9 +194,11 @@ export default function Login() {
                         </View>
                     </View>
                 </View>
-            </View>
+                    </View>
+                </ScrollView>
+            </KeyboardAvoidingView>
             <ResponseModal visible={modalVisible} type={modalType} title={modalTitle} message={modalMessage} onClose={() => setModalVisible(false)} />
-        </View>
+        </SafeAreaView>
     );
 }
 

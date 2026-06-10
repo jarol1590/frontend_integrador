@@ -9,6 +9,9 @@ import {
     TouchableOpacity,
     Pressable,
     ActivityIndicator,
+    Platform,
+    KeyboardAvoidingView,
+    ScrollView,
 } from "react-native";
 import ResponseModal from "../components/ResponseModal";
 import { router } from "expo-router";
@@ -20,6 +23,7 @@ import {
     type ForgotPasswordFormData,
 } from "@proyectointegrador/application";
 import { useDependencies } from "../providers/DependencyProvider";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 type Method = null | "email" | "sms";
 
@@ -67,7 +71,7 @@ export default function ForgotPassword() {
     };
 
     return (
-        <View style={{ flex: 1 }}>
+        <SafeAreaView style={{ flex: 1 }} edges={['top', 'right', 'left']}>
             <ImageBackground
                 source={require("../../../../packages/assets/images/MainBackground.png")}
                 style={StyleSheet.absoluteFillObject}
@@ -75,10 +79,13 @@ export default function ForgotPassword() {
                 imageStyle={{
                     transform: [
                         { scale: 1.5 },
-                        { translateY: 285 },
+                        { translateY: 330},
                     ],
                 }}
             />
+
+            <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+                <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
 
             <TouchableOpacity style={styles.backButton} onPress={() => method ? handleSelectMethod(null) : router.back()}>
                 <Ionicons name="arrow-back" size={24} color="#000" />
@@ -205,9 +212,11 @@ export default function ForgotPassword() {
                         </>
                     )}
                 </View>
-            </View>
+                    </View>
+                </ScrollView>
+            </KeyboardAvoidingView>
             <ResponseModal visible={modalVisible} type={modalType} title={modalTitle} message={modalMessage} onClose={() => setModalVisible(false)} />
-        </View>
+        </SafeAreaView>
     );
 }
 
@@ -230,7 +239,7 @@ const styles = StyleSheet.create({
     logoContainer: {
         width: 200,
         height: 200,
-        marginBottom: 80,
+        marginBottom: 16,
     },
     logo: {
         width: "100%",
@@ -239,20 +248,21 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 24,
         fontWeight: "bold",
-        marginBottom: 10,
+        marginBottom: 12,
         textAlign: "center",
     },
     subtitle: {
         fontSize: 14,
         color: "#555",
         textAlign: "center",
-        marginBottom: 25,
+        marginBottom: 20,
+        marginTop:0,
         lineHeight: 20,
         paddingHorizontal: 10,
     },
     card: {
         width: "100%",
-        backgroundColor: "rgba(255,255,255,0.9)",
+        backgroundColor: "rgba(255,255,255)",
         borderRadius: 20,
         padding: 25,
     },

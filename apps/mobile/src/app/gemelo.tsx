@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from "react"
 import {
-    View, Text, StyleSheet, TouchableOpacity, SafeAreaView,
+    View, Text, StyleSheet, TouchableOpacity,
     ScrollView, ImageBackground, ActivityIndicator, RefreshControl,
 } from "react-native"
+import { SafeAreaView } from "react-native-safe-area-context"
 import { Ionicons } from "@expo/vector-icons"
-import { router } from "expo-router"
+import { router, useLocalSearchParams } from "expo-router"
 import Svg, { Circle, Text as SvgText } from "react-native-svg"
 import { LineChart } from "react-native-gifted-charts"
 import ResponseModal from "../components/ResponseModal"
@@ -72,8 +73,9 @@ function RiskGauge({ score, size = 100 }: { score: number; size?: number }) {
 }
 
 export default function GemeloScreen() {
-    const [fincaId, setFincaId] = useState<number | null>(null)
-    const [fincaNombre, setFincaNombre] = useState("")
+    const params = useLocalSearchParams<{ fincaId?: string; fincaNombre?: string }>()
+    const [fincaId, setFincaId] = useState<number | null>(params.fincaId ? Number(params.fincaId) : null)
+    const [fincaNombre, setFincaNombre] = useState(params.fincaNombre ?? "")
     const [estado, setEstado] = useState<FincaGemeloEstadoDto | null>(null)
     const [lecturas, setLecturas] = useState<LecturaClimaticaDto[]>([])
     const [predicciones, setPredicciones] = useState<PrediccionGemeloDto[]>([])
@@ -92,17 +94,26 @@ export default function GemeloScreen() {
 
     const loadData = useCallback(async () => {
         try {
-            const perfil = await getMiPerfil()
-            const finca = perfil.fincas?.[0]
-            if (!finca) { showModal("error", "Error", "No tienes fincas asignadas."); return }
-            setFincaId(finca.fincaId)
-            setFincaNombre(finca.nombre)
+            let fid = fincaId
+            let fnombre = fincaNombre
+
+            if (!fid) {
+                const perfil = await getMiPerfil()
+                const finca = perfil.fincas?.[0]
+                if (!finca) { showModal("error", "Error", "No tienes fincas asignadas."); return }
+                fid = finca.fincaId
+                fnombre = finca.nombre
+            }
+
+            if (!fid) { showModal("error", "Error", "No se pudo determinar la finca."); return }
+            setFincaId(fid)
+            if (fnombre) setFincaNombre(fnombre)
 
             const [est, clima, preds, alts] = await Promise.all([
-                getGemeloEstado(finca.fincaId),
-                getClima(finca.fincaId, desdeStr, hastaStr),
-                getPredicciones(finca.fincaId, 7),
-                getAlertas(finca.fincaId, true),
+                getGemeloEstado(fid),
+                getClima(fid, desdeStr, hastaStr),
+                getPredicciones(fid, 7),
+                getAlertas(fid, true),
             ])
             setEstado(est)
             setLecturas(clima)
@@ -113,7 +124,7 @@ export default function GemeloScreen() {
         } finally {
             setLoading(false)
         }
-    }, [])
+    }, [fincaId, fincaNombre])
 
     useEffect(() => { loadData() }, [loadData])
 
@@ -162,7 +173,7 @@ export default function GemeloScreen() {
     )
 
     return (
-        <SafeAreaView style={styles.safeArea}>
+        <SafeAreaView style={styles.safeArea} edges={['top', 'right', 'left']}>
             <ImageBackground
                 source={require("../../../../packages/assets/images/MainBackground.png")}
                 style={StyleSheet.absoluteFillObject}

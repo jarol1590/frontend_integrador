@@ -6,13 +6,15 @@ import {
     StyleSheet,
     TouchableOpacity,
     ScrollView,
-    SafeAreaView,
     ImageBackground,
     Modal,
     TextInput,
     FlatList,
     ActivityIndicator,
+    Platform,
+    KeyboardAvoidingView,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { Calendar, LocaleConfig } from "react-native-calendars";
@@ -21,6 +23,7 @@ import { HttpClient } from "@proyectointegrador/shared-infra";
 import ChatModal from "../components/ChatModal";
 import ParametroCircularChart from "../components/ParametroCircularChart";
 import { getMiPerfil, getAnalisisPorFinca, AnalisisPorFinca } from "../infrastructure/dashboardApi";
+import { usePushNotifications } from "../hooks/usePushNotifications";
 
 // ─── Configuración español ─────────────────────────────────
 LocaleConfig.locales["es"] = {
@@ -61,6 +64,8 @@ export default function Dashboard() {
     const [userRole, setUserRole] = useState("productor");
     const [analisisList, setAnalisisList] = useState<AnalisisPorFinca[]>([]);
     const [loadingAnalisis, setLoadingAnalisis] = useState(true);
+    const [usuarioId, setUsuarioId] = useState<number | null>(null);
+    usePushNotifications(usuarioId);
 
     // Calendario
     const [events, setEvents] = useState<Event[]>([]);
@@ -100,6 +105,7 @@ export default function Dashboard() {
 
                 // Cargar perfil con fincas y análisis
                 const perfil = await getMiPerfil();
+                setUsuarioId(perfil.usuarioId);
                 if (perfil.tipoUsuario?.toLowerCase() !== "productor") {
                     setLoadingAnalisis(false);
                     return;
@@ -194,7 +200,7 @@ export default function Dashboard() {
     const handleChat = () => setChatVisible(true);
 
     return (
-        <SafeAreaView style={styles.safeArea}>
+        <SafeAreaView style={styles.safeArea} edges={['top', 'right', 'left']}>
             <ImageBackground
                 source={require("../../../../packages/assets/images/MainBackground.png")}
                 style={StyleSheet.absoluteFillObject}
@@ -437,6 +443,7 @@ export default function Dashboard() {
                 onRequestClose={() => setModalVisible(false)}
             >
                 <View style={styles.modalOverlay}>
+                    <KeyboardAvoidingView style={{ width: "100%", alignItems: "center" }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
                     <View style={styles.modalCard}>
                         <View style={styles.modalHeader}>
                             <Text style={styles.modalTitle}>Nueva actividad</Text>
@@ -491,6 +498,7 @@ export default function Dashboard() {
                             <Text style={styles.saveBtnText}>GUARDAR ACTIVIDAD</Text>
                         </TouchableOpacity>
                     </View>
+                    </KeyboardAvoidingView>
                 </View>
             </Modal>
 

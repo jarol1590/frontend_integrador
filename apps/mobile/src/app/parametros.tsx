@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react"
+import { useState, useEffect, useCallback } from "react"
 import {
     View,
     Text,
@@ -9,7 +9,8 @@ import {
     Alert,
     ActivityIndicator,
     RefreshControl,
-    Keyboard,
+    Platform,
+    KeyboardAvoidingView,
 } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import ResponseModal from "../components/ResponseModal"
@@ -28,8 +29,6 @@ import {
 
 export default function ParametrosScreen() {
     const insets = useSafeAreaInsets()
-    const formScrollRef = useRef<ScrollView>(null)
-    const [keyboardPadding, setKeyboardPadding] = useState(0)
     const [parametros, setParametros] = useState<ParametroCalidadDto[]>([])
     const [loading, setLoading] = useState(true)
     const [refreshing, setRefreshing] = useState(false)
@@ -52,15 +51,6 @@ export default function ParametrosScreen() {
 
     useEffect(() => {
         loadUserAndParams()
-    }, [])
-
-    useEffect(() => {
-        const show = Keyboard.addListener("keyboardDidShow", (e) => {
-            setKeyboardPadding(e.endCoordinates.height)
-            setTimeout(() => formScrollRef.current?.scrollToEnd({ animated: true }), 200)
-        })
-        const hide = Keyboard.addListener("keyboardDidHide", () => setKeyboardPadding(0))
-        return () => { show.remove(); hide.remove() }
     }, [])
 
     const showModal = (type: "success" | "error", title: string, message: string) => {
@@ -258,63 +248,64 @@ export default function ParametrosScreen() {
             </View>
 
             {showForm ? (
-                <ScrollView
-                    ref={formScrollRef}
-                    style={styles.formContainer}
-                    contentContainerStyle={{ paddingBottom: keyboardPadding + 40 }}
-                    keyboardShouldPersistTaps="handled"
-                    showsVerticalScrollIndicator={false}
-                >
-                    <Text style={styles.formTitle}>
-                        {editing ? "Editar parámetro" : "Nuevo parámetro"}
-                    </Text>
+                <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+                    <ScrollView
+                        style={styles.formContainer}
+                        contentContainerStyle={{ paddingBottom: 40 }}
+                        keyboardShouldPersistTaps="handled"
+                        showsVerticalScrollIndicator={false}
+                    >
+                        <Text style={styles.formTitle}>
+                            {editing ? "Editar parámetro" : "Nuevo parámetro"}
+                        </Text>
 
-                    <Text style={styles.label}>Nombre *</Text>
-                    <TextInput style={styles.input} value={nombre} onChangeText={setNombre} placeholder="Ej: Acidez" placeholderTextColor="#999" />
+                        <Text style={styles.label}>Nombre *</Text>
+                        <TextInput style={styles.input} value={nombre} onChangeText={setNombre} placeholder="Ej: Acidez" placeholderTextColor="#999" />
 
-                    <Text style={styles.label}>Unidad</Text>
-                    <TextInput style={styles.input} value={unidad} onChangeText={setUnidad} placeholder="Ej: g/L, pH, °C" placeholderTextColor="#999" />
+                        <Text style={styles.label}>Unidad</Text>
+                        <TextInput style={styles.input} value={unidad} onChangeText={setUnidad} placeholder="Ej: g/L, pH, °C" placeholderTextColor="#999" />
 
-                    <Text style={styles.label}>Valor mínimo óptimo</Text>
-                    <TextInput style={styles.input} value={valorMinimo} onChangeText={setValorMinimo} placeholder="Ej: 0.5" placeholderTextColor="#999" keyboardType="decimal-pad" />
+                        <Text style={styles.label}>Valor mínimo óptimo</Text>
+                        <TextInput style={styles.input} value={valorMinimo} onChangeText={setValorMinimo} placeholder="Ej: 0.5" placeholderTextColor="#999" keyboardType="decimal-pad" />
 
-                    <Text style={styles.label}>Valor máximo óptimo</Text>
-                    <TextInput style={styles.input} value={valorMaximo} onChangeText={setValorMaximo} placeholder="Ej: 1.5" placeholderTextColor="#999" keyboardType="decimal-pad" />
+                        <Text style={styles.label}>Valor máximo óptimo</Text>
+                        <TextInput style={styles.input} value={valorMaximo} onChangeText={setValorMaximo} placeholder="Ej: 1.5" placeholderTextColor="#999" keyboardType="decimal-pad" />
 
-                    <Text style={styles.label}>Orden</Text>
-                    <TextInput style={styles.input} value={orden} onChangeText={setOrden} placeholder="Posición en el formulario" placeholderTextColor="#999" keyboardType="number-pad" />
+                        <Text style={styles.label}>Orden</Text>
+                        <TextInput style={styles.input} value={orden} onChangeText={setOrden} placeholder="Posición en el formulario" placeholderTextColor="#999" keyboardType="number-pad" />
 
-                    <Text style={styles.label}>Descripción / Instrucción</Text>
-                    <TextInput
-                        style={[styles.input, styles.textArea]}
-                        value={descripcion}
-                        onChangeText={setDescripcion}
-                        placeholder="Describe qué debe medir el trabajador..."
-                        placeholderTextColor="#999"
-                        multiline
-                        numberOfLines={3}
-                    />
+                        <Text style={styles.label}>Descripción / Instrucción</Text>
+                        <TextInput
+                            style={[styles.input, styles.textArea]}
+                            value={descripcion}
+                            onChangeText={setDescripcion}
+                            placeholder="Describe qué debe medir el trabajador..."
+                            placeholderTextColor="#999"
+                            multiline
+                            numberOfLines={3}
+                        />
 
-                    <View style={styles.formButtons}>
-                        <TouchableOpacity
-                            style={styles.cancelBtn}
-                            onPress={() => { setShowForm(false); resetForm() }}
-                        >
-                            <Text style={styles.cancelBtnText}>Cancelar</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={styles.saveBtn}
-                            onPress={handleSave}
-                            disabled={saving}
-                        >
-                            {saving ? (
-                                <ActivityIndicator color="#fff" size="small" />
-                            ) : (
-                                <Text style={styles.saveBtnText}>Guardar</Text>
-                            )}
-                        </TouchableOpacity>
-                    </View>
-                </ScrollView>
+                        <View style={styles.formButtons}>
+                            <TouchableOpacity
+                                style={styles.cancelBtn}
+                                onPress={() => { setShowForm(false); resetForm() }}
+                            >
+                                <Text style={styles.cancelBtnText}>Cancelar</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.saveBtn}
+                                onPress={handleSave}
+                                disabled={saving}
+                            >
+                                {saving ? (
+                                    <ActivityIndicator color="#fff" size="small" />
+                                ) : (
+                                    <Text style={styles.saveBtnText}>Guardar</Text>
+                                )}
+                            </TouchableOpacity>
+                        </View>
+                    </ScrollView>
+                </KeyboardAvoidingView>
             ) : (
                 <>
                     <ScrollView

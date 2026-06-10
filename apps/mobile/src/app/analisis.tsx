@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import {
     View,
     Text,
@@ -8,7 +8,8 @@ import {
     ScrollView,
     ActivityIndicator,
     FlatList,
-    Keyboard,
+    Platform,
+    KeyboardAvoidingView,
 } from "react-native"
 import { router } from "expo-router"
 import { Ionicons } from "@expo/vector-icons"
@@ -33,8 +34,6 @@ type Step = "lotes" | "muestras" | "form"
 
 export default function AnalisisScreen() {
     const insets = useSafeAreaInsets()
-    const formScrollRef = useRef<ScrollView>(null)
-    const [keyboardPadding, setKeyboardPadding] = useState(0)
     const [step, setStep] = useState<Step>("lotes")
     const [lotes, setLotes] = useState<LoteDto[]>([])
     const [parametros, setParametros] = useState<ParametroCalidadDto[]>([])
@@ -65,15 +64,6 @@ export default function AnalisisScreen() {
         setModalVisible(true);
         if (onClose) setModalCallback(() => onClose);
     };
-
-    useEffect(() => {
-        const show = Keyboard.addListener("keyboardDidShow", (e) => {
-            setKeyboardPadding(e.endCoordinates.height)
-            setTimeout(() => formScrollRef.current?.scrollToEnd({ animated: true }), 200)
-        })
-        const hide = Keyboard.addListener("keyboardDidHide", () => setKeyboardPadding(0))
-        return () => { show.remove(); hide.remove() }
-    }, [])
 
     const loadUser = async () => {
         try {
@@ -314,58 +304,59 @@ export default function AnalisisScreen() {
 
             {step === "form" && (
                 <View style={{ flex: 1 }}>
-                    <ScrollView
-                        ref={formScrollRef}
-                        contentContainerStyle={[styles.listContainer, { paddingBottom: keyboardPadding + 40 }]}
-                        keyboardShouldPersistTaps="handled"
-                        showsVerticalScrollIndicator={false}
-                    >
-                        <Text style={styles.sectionTitle}>
-                            {selectedLote?.codigo ?? `Lote #${selectedLote?.loteId}`} — Muestra #{selectedMuestra?.muestraId}
-                        </Text>
-                        <Text style={styles.formHint}>Ingresa los valores del análisis</Text>
+                    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+                        <ScrollView
+                            contentContainerStyle={[styles.listContainer, { paddingBottom: 40 }]}
+                            keyboardShouldPersistTaps="handled"
+                            showsVerticalScrollIndicator={false}
+                        >
+                            <Text style={styles.sectionTitle}>
+                                {selectedLote?.codigo ?? `Lote #${selectedLote?.loteId}`} — Muestra #{selectedMuestra?.muestraId}
+                            </Text>
+                            <Text style={styles.formHint}>Ingresa los valores del análisis</Text>
 
-                        {parametros.map((p) => (
-                            <View key={p.parametroId} style={styles.paramField}>
-                                <Text style={styles.paramLabel}>
-                                    {p.nombre}
-                                    {p.unidad ? <Text style={styles.paramUnit}> ({p.unidad})</Text> : null}
-                                </Text>
-                                {p.descripcion && (
-                                    <Text style={styles.paramHint}>{p.descripcion}</Text>
+                            {parametros.map((p) => (
+                                <View key={p.parametroId} style={styles.paramField}>
+                                    <Text style={styles.paramLabel}>
+                                        {p.nombre}
+                                        {p.unidad ? <Text style={styles.paramUnit}> ({p.unidad})</Text> : null}
+                                    </Text>
+                                    {p.descripcion && (
+                                        <Text style={styles.paramHint}>{p.descripcion}</Text>
+                                    )}
+                                    <TextInput
+                                        style={styles.input}
+                                        value={valores[p.parametroId] ?? ""}
+                                        onChangeText={(v) => setValores((prev) => ({ ...prev, [p.parametroId]: v }))}
+                                        placeholder={p.valorMinimo != null && p.valorMaximo != null
+                                            ? `Óptimo: ${p.valorMinimo} - ${p.valorMaximo}`
+                                            : "Ingresa el valor"}
+                                        placeholderTextColor="#999"
+                                        keyboardType="decimal-pad"
+                                    />
+                                </View>
+                            ))}
+
+                            <Text style={styles.label}>Observaciones</Text>
+                            <TextInput
+                                style={[styles.input, styles.textArea]}
+                                value={observaciones}
+                                onChangeText={setObservaciones}
+                                placeholder="Notas adicionales sobre el análisis..."
+                                placeholderTextColor="#999"
+                                multiline
+                                numberOfLines={3}
+                            />
+
+                            <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit} disabled={saving}>
+                                {saving ? (
+                                    <ActivityIndicator color="#fff" />
+                                ) : (
+                                    <Text style={styles.submitText}>Registrar análisis</Text>
                                 )}
-                                <TextInput
-                                    style={styles.input}
-                                    value={valores[p.parametroId] ?? ""}
-                                    onChangeText={(v) => setValores((prev) => ({ ...prev, [p.parametroId]: v }))}
-                                    placeholder={p.valorMinimo != null && p.valorMaximo != null
-                                        ? `Óptimo: ${p.valorMinimo} - ${p.valorMaximo}`
-                                        : "Ingresa el valor"}
-                                    placeholderTextColor="#999"
-                                    keyboardType="decimal-pad"
-                                />
-                            </View>
-                        ))}
-
-                        <Text style={styles.label}>Observaciones</Text>
-                        <TextInput
-                            style={[styles.input, styles.textArea]}
-                            value={observaciones}
-                            onChangeText={setObservaciones}
-                            placeholder="Notas adicionales sobre el análisis..."
-                            placeholderTextColor="#999"
-                            multiline
-                            numberOfLines={3}
-                        />
-
-                        <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit} disabled={saving}>
-                            {saving ? (
-                                <ActivityIndicator color="#fff" />
-                            ) : (
-                                <Text style={styles.submitText}>Registrar análisis</Text>
-                            )}
-                        </TouchableOpacity>
-                    </ScrollView>
+                            </TouchableOpacity>
+                        </ScrollView>
+                    </KeyboardAvoidingView>
                 </View>
             )}
 

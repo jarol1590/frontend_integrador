@@ -15,7 +15,10 @@ import {
     Pressable,
     ScrollView,
     ActivityIndicator,
+    Platform,
+    KeyboardAvoidingView,
 } from "react-native";
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useDependencies } from "../providers/DependencyProvider";
@@ -24,6 +27,7 @@ import { fetchDepartments, fetchCitiesByDepartment, type DepartmentData, type Ci
 import { findOrCreateDepartamento, findOrCreateMunicipio } from "../infrastructure/ubicacionApi";
 import { HttpClient } from "@proyectointegrador/shared-infra";
 import ResponseModal from "../components/ResponseModal";
+import { RNSVGFeBlend } from "react-native-svg/lib/typescript/fabric";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? ""
 
@@ -251,7 +255,8 @@ export default function Register() {
 
         await registerUseCase.execute(dto)
         console.log('[DEBUG REGISTER] step 3 — registro exitoso, redirigiendo al login...')
-        router.push("/login" as any);
+        showModal("success", "Registro exitoso", "Tu cuenta ha sido creada correctamente. Ahora puedes iniciar sesión.");
+        setTimeout(() => router.push("/login" as any), 2000);
     } catch (error: any) {
         console.log('[DEBUG REGISTER] step 3 — ERROR capturado:', error.message, JSON.stringify(error, null, 2))
         showModal("error", "Error", error.message ?? "No se pudo completar el registro.");
@@ -261,7 +266,7 @@ export default function Register() {
 };
 
     return (
-        <View style={{ flex: 1 }}>
+        <SafeAreaView style={{ flex: 1 }} edges={['top', 'right', 'left']}>
             <ImageBackground
                 source={require("../../../../packages/assets/images/MainBackground.png")}
                 style={StyleSheet.absoluteFillObject}
@@ -276,6 +281,7 @@ export default function Register() {
                 <Ionicons name="arrow-back" size={24} color="#000" />
             </TouchableOpacity>
 
+            <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
             <ScrollView
                 contentContainerStyle={styles.container}
                 keyboardShouldPersistTaps="handled"
@@ -746,8 +752,9 @@ export default function Register() {
                     </View>
                 )}
             </ScrollView>
+            </KeyboardAvoidingView>
             <ResponseModal visible={modalVisible} type={modalType} title={modalTitle} message={modalMessage} onClose={() => setModalVisible(false)} />
-        </View>
+        </SafeAreaView>
     );
 }
 
@@ -789,7 +796,8 @@ const styles = StyleSheet.create({
     },
     card: {
         width: "100%",
-        backgroundColor: "rgba(255,255,255,0.9)",
+        backgroundColor: "rgb(255, 255, 255)",
+        borderColor: "rgb(0,0,0)",
         borderRadius: 20,
         padding: 25,
         gap: 16,

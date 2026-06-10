@@ -58,6 +58,25 @@ export interface AlertaGemeloDto {
     leida: boolean
 }
 
+export interface RiesgoRegionalFincaDto {
+    fincaId: number
+    fincaNombre: string
+    municipioNombre: string
+    scoreRiesgoGlobal: number
+    alertasActivas: number
+    tempMediaReciente: number | null
+    latitud: number | null
+    longitud: number | null
+}
+
+export interface CentroAcopioRiesgoRegionalDto {
+    centroAcopioId: number
+    centroAcopioNombre: string
+    generadaUtc: string
+    fincas: RiesgoRegionalFincaDto[]
+    scoreRiesgoPromedio: number
+}
+
 export interface SincronizarGemeloResultDto {
     fincaId: number
     syncUtc: string
@@ -132,4 +151,10 @@ export async function marcarAlertaLeida(fincaId: number, alertaId: number): Prom
     const http = await authHttp()
     const res = await http.patch<any>(`/fincas/${fincaId}/gemelo/alertas/${alertaId}/leida`)
     unwrapResponse(res)
+}
+
+export async function getRiesgoRegional(centroAcopioId: number): Promise<CentroAcopioRiesgoRegionalDto> {
+    const http = await authHttp()
+    const res = await http.get<any>(`/centros-acopio/${centroAcopioId}/gemelo/riesgo-regional`)
+    return unwrapResponse<CentroAcopioRiesgoRegionalDto>(res)
 }

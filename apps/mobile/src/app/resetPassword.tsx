@@ -9,6 +9,9 @@ import {
     TouchableOpacity,
     Pressable,
     ActivityIndicator,
+    Platform,
+    KeyboardAvoidingView,
+    ScrollView,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -20,6 +23,7 @@ import {
 } from "@proyectointegrador/application";
 import { useDependencies } from "../providers/DependencyProvider";
 import ResponseModal from "../components/ResponseModal";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function ResetPassword() {
     const [loading, setLoading] = useState(false);
@@ -68,7 +72,7 @@ export default function ResetPassword() {
     };
 
     return (
-        <View style={{ flex: 1 }}>
+        <SafeAreaView style={{ flex: 1 }} edges={['top', 'right', 'left']}>
             <ImageBackground
                 source={require("../../../../packages/assets/images/MainBackground.png")}
                 style={StyleSheet.absoluteFillObject}
@@ -76,10 +80,13 @@ export default function ResetPassword() {
                 imageStyle={{
                     transform: [
                         { scale: 1.5 },
-                        { translateY: 285 },
+                        { translateY: 330},
                     ],
                 }}
             />
+
+            <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+                <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
 
             <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
                 <Ionicons name="arrow-back" size={24} color="#000" />
@@ -184,9 +191,11 @@ export default function ResetPassword() {
                         )}
                     </Pressable>
                 </View>
-            </View>
+                    </View>
+                </ScrollView>
+            </KeyboardAvoidingView>
             <ResponseModal visible={modalVisible} type={modalType} title={modalTitle} message={modalMessage} onClose={() => { setModalVisible(false); modalCloseCallback?.(); setModalCloseCallback(null); }} />
-        </View>
+        </SafeAreaView>
     );
 }
 
@@ -209,7 +218,7 @@ const styles = StyleSheet.create({
     logoContainer: {
         width: 200,
         height: 200,
-        marginBottom: 80,
+        marginBottom: 16,
     },
     logo: {
         width: "100%",
@@ -231,7 +240,7 @@ const styles = StyleSheet.create({
     },
     card: {
         width: "100%",
-        backgroundColor: "rgba(255,255,255,0.9)",
+        backgroundColor: "rgb(255,255,255)",
         borderRadius: 20,
         padding: 25,
     },
