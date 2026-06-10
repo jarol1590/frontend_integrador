@@ -4,7 +4,8 @@ import { useRouter } from 'next/navigation'
 import { ChevronLeft, Loader2, X } from 'lucide-react'
 import AppLayout from '../../components/AppLayout'
 import ResponseModal from '../../components/ResponseModal'
-import { getMiPerfil } from '../../infrastructure/dashboardApi'
+import QRCode from '../../components/QRCode'
+import { getMiPerfil, ProductorPerfil } from '../../infrastructure/dashboardApi'
 import { getLotesByFinca, LoteDto } from '../../infrastructure/ordenosApi'
 
 function status(lote: LoteDto | null): { label: string; color: string } {
@@ -18,6 +19,7 @@ function status(lote: LoteDto | null): { label: string; color: string } {
 
 export default function Lotes() {
     const router = useRouter()
+    const [perfil, setPerfil] = useState<ProductorPerfil | null>(null)
     const [lotes, setLotes] = useState<LoteDto[]>([])
     const [loading, setLoading] = useState(true)
     const [selectedLote, setSelectedLote] = useState<LoteDto | null>(null)
@@ -27,6 +29,7 @@ export default function Lotes() {
         setLoading(true)
         try {
             const p = await getMiPerfil()
+            setPerfil(p)
             const finca = p.fincas?.[0]
             if (finca) {
                 const all = await getLotesByFinca(finca.fincaId)
@@ -77,9 +80,7 @@ export default function Lotes() {
                                             {s.label}
                                         </span>
                                         {s.label === 'Abierto' && (
-                                            <div className="w-8 h-8 bg-blue-50 rounded-full flex items-center justify-center">
-                                                <span className="text-blue-500 text-[10px] font-bold">QR</span>
-                                            </div>
+                                            <QRCode value={JSON.stringify({ idLote: item.loteId, idFinca: perfil?.fincas?.[0]?.fincaId })} size={32} />
                                         )}
                                     </div>
                                 </button>
@@ -101,13 +102,8 @@ export default function Lotes() {
                         <span className="text-xs font-bold text-white px-3 py-1 rounded-xl" style={{ backgroundColor: status(selectedLote).color }}>
                             {status(selectedLote).label}
                         </span>
-                        <div className="w-48 h-48 bg-gray-100 rounded-xl flex items-center justify-center">
-                            <span className="text-gray-400 text-sm">QR</span>
-                        </div>
-                        <p className="text-[11px] text-gray-400 text-center">Comparte este QR para registrar el transporte</p>
-                        <button className="flex items-center gap-2 bg-green-500 text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-green-600 transition-colors">
-                            Compartir QR
-                        </button>
+                        <QRCode value={JSON.stringify({ idLote: selectedLote.loteId, idFinca: perfil?.fincas?.[0]?.fincaId })} size={192} />
+                        <p className="text-[11px] text-gray-400 text-center">Escanea este QR para registrar el transporte</p>
                     </div>
                 </div>
             )}

@@ -54,6 +54,7 @@ export default function RegisterPage() {
   const [centroOpen, setCentroOpen] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
+  const [passwordError, setPasswordError] = useState('')
 
   const [deptos, setDeptos] = useState<{ id: number; name: string }[]>([])
   const [cities, setCities] = useState<{ id: number; name: string }[]>([])
@@ -66,6 +67,7 @@ export default function RegisterPage() {
     watch,
     setValue,
     getValues,
+    setError,
     formState: { errors },
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
@@ -74,7 +76,9 @@ export default function RegisterPage() {
       apellidos: '',
       telefono: '',
       correo: '',
+      idType: 'CC',
       idNumber: '',
+      role: 'productor' as 'productor' | 'acopio' | 'trabajador',
       nombreLugar: '',
       departamento: null,
       municipio: null,
@@ -150,25 +154,48 @@ export default function RegisterPage() {
   const totalSteps = role === 'trabajador' ? 3 : 5
 
   const validateStep = async (): Promise<boolean> => {
-    if (step === 1) return await trigger(['nombres', 'apellidos', 'telefono'])
-    if (step === 2) return await trigger(['correo', 'idType', 'idNumber', 'role'])
-    if (step === 3) {
-      if (role === 'trabajador') {
-        return await trigger(['centroSeleccionado', 'password', 'confirmPassword'])
+    setPasswordError('')
+    const data = getValues()
+
+    let fields: (keyof RegisterFormData)[]
+    if (step === 1) fields = ['nombres', 'apellidos', 'telefono']
+    else if (step === 2) fields = ['correo', 'idType', 'idNumber', 'role']
+    else if (step === 3 && role === 'trabajador') fields = ['centroSeleccionado', 'password', 'confirmPassword']
+    else if (step === 3) fields = ['nombreLugar', 'departamento', 'municipio']
+    else if (step === 4) fields = ['direccion']
+    else if (step === 5) fields = ['password', 'confirmPassword']
+    else return false
+
+    const partial: Record<string, unknown> = {}
+    for (const f of fields) partial[f] = data[f]
+
+    const picked = registerSchema.pick(
+      Object.fromEntries(fields.map((f) => [f, true])) as any,
+    )
+    const result = picked.safeParse(partial)
+
+    if (!result.success) {
+      for (const issue of result.error.issues) {
+        const path = issue.path[0] as keyof RegisterFormData
+        setError(path, { message: issue.message })
       }
-      return await trigger(['nombreLugar', 'departamento', 'municipio'])
+      return false
     }
-    if (step === 4) {
-      const valid = await trigger(['direccion'])
-      if (!valid) return false
-      if (!getValues('latitud') || !getValues('longitud')) {
-        showModal('error', 'Ubicación', "Presiona 'Obtener ubicación' para buscar las coordenadas de la dirección.")
+
+    if (fields.includes('confirmPassword' as any)) {
+      if (data.password !== data.confirmPassword) {
+        setPasswordError('Las contraseñas no coinciden')
+        setError('confirmPassword', { message: 'Las contraseñas no coinciden' })
         return false
       }
-      return true
     }
-    if (step === 5) return await trigger(['password', 'confirmPassword'])
-    return false
+
+    if (step === 4 && (!data.latitud || !data.longitud)) {
+      showModal('error', 'Ubicación', "Presiona 'Obtener ubicación' para buscar las coordenadas de la dirección.")
+      return false
+    }
+
+    return true
   }
 
   const handleNext = async () => {
@@ -183,9 +210,13 @@ export default function RegisterPage() {
   }
 
   const handleRegister = async () => {
-    const valid = await trigger(['password', 'confirmPassword'])
-    if (!valid) return
     const data = getValues()
+    if (data.password !== data.confirmPassword) {
+      setPasswordError('Las contraseñas no coinciden')
+      setError('confirmPassword', { message: 'Las contraseñas no coinciden' })
+      return
+    }
+    setPasswordError('')
     setLoading(true)
     try {
       const roleMap: Record<string, number> = {
@@ -568,7 +599,7 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <div className={`flex items-center gap-3 bg-gray-200 rounded-2xl px-4 py-4 ${errors.confirmPassword ? 'border-2 border-red-500' : ''}`}>
+              <div className={`flex items-center gap-3 bg-gray-200 rounded-2xl px-4 py-4 ${errors.confirmPassword || passwordError ? 'border-2 border-red-500' : ''}`}>
                 <Lock size={20} className="text-gray-600 shrink-0" />
                 <Controller control={control} name="confirmPassword" render={({ field }) => (
                   <input {...field} placeholder="Confirmar contraseña" className="flex-1 bg-transparent outline-none text-base text-gray-900 placeholder-gray-500" type={showConfirm ? 'text' : 'password'} autoCapitalize="none" />
@@ -578,6 +609,7 @@ export default function RegisterPage() {
                 </button>
               </div>
               {errors.confirmPassword && <p className="text-red-500 text-xs mt-1 ml-2">{errors.confirmPassword.message}</p>}
+              {passwordError && !errors.confirmPassword && <p className="text-red-500 text-xs mt-1 ml-2">{passwordError}</p>}
             </div>
 
             <div className="flex justify-between mt-2">
@@ -683,7 +715,7 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <div className={`flex items-center gap-3 bg-gray-200 rounded-2xl px-4 py-4 ${errors.confirmPassword ? 'border-2 border-red-500' : ''}`}>
+              <div className={`flex items-center gap-3 bg-gray-200 rounded-2xl px-4 py-4 ${errors.confirmPassword || passwordError ? 'border-2 border-red-500' : ''}`}>
                 <Lock size={20} className="text-gray-600 shrink-0" />
                 <Controller control={control} name="confirmPassword" render={({ field }) => (
                   <input {...field} placeholder="Confirmar contraseña" className="flex-1 bg-transparent outline-none text-base text-gray-900 placeholder-gray-500" type={showConfirm ? 'text' : 'password'} autoCapitalize="none" />
@@ -693,6 +725,7 @@ export default function RegisterPage() {
                 </button>
               </div>
               {errors.confirmPassword && <p className="text-red-500 text-xs mt-1 ml-2">{errors.confirmPassword.message}</p>}
+              {passwordError && !errors.confirmPassword && <p className="text-red-500 text-xs mt-1 ml-2">{passwordError}</p>}
             </div>
 
             <div className="flex justify-between mt-2">

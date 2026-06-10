@@ -197,14 +197,21 @@ export default function DashboardCentro() {
                         style={styles.tabCowImage}
                     />
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.tabItem} onPress={() => setTrabajadoresVisible(true)}>
-                    <Ionicons name="people-outline" size={24} color="#888" />
-                    <Text style={styles.tabLabel}>Trabajadores</Text>
-                </TouchableOpacity>
+                {userRole === "Trabajador Centro de acopio" ? (
+                    <TouchableOpacity style={styles.tabItem} onPress={() => router.push("/qr-scanner" as any)}>
+                        <Ionicons name="qr-code-outline" size={24} color="#888" />
+                        <Text style={styles.tabLabel}>QR</Text>
+                    </TouchableOpacity>
+                ) : (
+                    <TouchableOpacity style={styles.tabItem} onPress={() => setTrabajadoresVisible(true)}>
+                        <Ionicons name="people-outline" size={24} color="#888" />
+                        <Text style={styles.tabLabel}>Trabajadores</Text>
+                    </TouchableOpacity>
+                )}
             </View>
 
             <ChatModal visible={chatVisible} onClose={() => setChatVisible(false)} />
-            {centroAcopioId && (
+            {centroAcopioId && userRole !== "Trabajador Centro de acopio" && (
                 <TrabajadoresModal
                     visible={trabajadoresVisible}
                     centroAcopioId={centroAcopioId}

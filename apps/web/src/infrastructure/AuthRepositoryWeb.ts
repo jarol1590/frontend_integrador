@@ -9,16 +9,15 @@ export class AuthRepositoryWeb implements IAuthRepository {
   private userKey = 'usuario'
 
   async register(data: RegisterRequest): Promise<void> {
-    const response = await this.http.post<{
-      message?: string
-      status?: number
-    }>('/usuarios', {
+    const body: Record<string, any> = {
       email: data.email,
       password: data.password,
       estado: data.estado,
       rolId: data.rolId,
       centroAcopioId: data.centroAcopioId,
-      productor: {
+    }
+    if (data.rolId === 3) {
+      body.productor = {
         nombre: data.productorNombre,
         documento: data.documento,
         telefono: data.telefono,
@@ -30,12 +29,38 @@ export class AuthRepositoryWeb implements IAuthRepository {
           longitud: data.longitud ?? 0,
           municipioId: data.municipioId,
         },
-      },
-    })
+      }
+    }
+    if (data.rolId === 2 && data.centroAcopio) {
+      body.centroAcopio = {
+        nombre: data.centroAcopio.nombre,
+        direccion: data.centroAcopio.direccion,
+        latitud: data.centroAcopio.latitud,
+        longitud: data.centroAcopio.longitud,
+        municipioId: data.centroAcopio.municipioId,
+      }
+    }
+    if (data.rolId === 4 && data.trabajador) {
+      body.trabajador = {
+        nombre: data.trabajador.nombre,
+        documento: data.trabajador.documento,
+        telefono: data.trabajador.telefono,
+        tipoDocumentoId: data.trabajador.tipoDocumentoId,
+      }
+    }
 
-    if (response.status >= 400) {
+    const response = await this.http.post<{
+      success?: boolean
+      status?: number
+      message?: string
+      errors?: string | string[]
+    }>('/usuarios', body)
+
+    if (response.status >= 400 || (response.data && 'success' in response.data && !response.data.success)) {
       throw new Error(
-        response.data.message ?? 'No se pudo completar el registro',
+        response.data?.message ??
+          (Array.isArray(response.data?.errors) ? response.data.errors.join(', ') : response.data?.errors) ??
+          'No se pudo completar el registro',
       )
     }
   }

@@ -17,6 +17,7 @@ import {
     ActivityIndicator,
     Platform,
     KeyboardAvoidingView,
+    Alert,
 } from "react-native";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from "expo-router";
@@ -189,8 +190,12 @@ export default function Register() {
     };
 
    const handleRegister = async () => {
-    const valid = await trigger(["password", "confirmPassword"]);
+     const valid = await trigger(["password", "confirmPassword"]);
     if (!valid) return;
+    if (getValues("password") !== getValues("confirmPassword")) {
+      Alert.alert("Error", "Las contraseñas no coinciden");
+      return;
+    }
     const data = getValues();
     console.log('[DEBUG REGISTER] step 1 — all form data:', JSON.stringify(data, null, 2))
     setLoading(true);

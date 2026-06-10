@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { Plus, Loader2, X, ChevronLeft } from 'lucide-react'
 import AppLayout from '../../components/AppLayout'
 import ResponseModal from '../../components/ResponseModal'
+import QRCode from '../../components/QRCode'
 import { getMiPerfil, ProductorPerfil } from '../../infrastructure/dashboardApi'
 import { createOrdeno, createLote, getLotesByFinca, getOrdenosByFinca, LoteDto, OrdenoDto } from '../../infrastructure/ordenosApi'
 
@@ -141,9 +142,7 @@ export default function Ordenos() {
                                                 <p className="text-xs text-gray-500">{item.volumenLitros} L</p>
                                             </div>
                                             {lote ? (
-                                                <div className="w-9 h-9 bg-blue-50 rounded-full flex items-center justify-center">
-                                                    <span className="text-blue-500 text-xs font-bold">QR</span>
-                                                </div>
+                                                <QRCode value={JSON.stringify({ idLote: lote.loteId, idFinca: finca?.fincaId })} size={36} />
                                             ) : (
                                                 <button
                                                     onClick={() => handleCrearLoteParaOrdeno(item.ordenoId, item.volumenLitros)}
