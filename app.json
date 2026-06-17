@@ -1,0 +1,13 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "d4733079-7669-486f-b0e4-1ff70c7d38ad"
+      }
+    },
+    "android": {
+      "package": "com.vanessaos24.proyectointegrador"
+    },
+    "owner": "vanessaos24"
+  }
+}

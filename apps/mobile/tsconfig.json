@@ -2,20 +2,45 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
-    "baseUrl": ".",
-    "types": ["react", "react-native"],
+    "jsx": "react-jsx",
     "paths": {
-      "@/*": ["./*"],
-      "@domain/*": ["../../src/domain/*"],
-      "@application/*": ["../../src/application/*"],
-      "@infra/*": ["../../src/infrastructure/*"],
-      "@ui/*": ["../../src/ui/*"]
+      "@/*": [
+        "./src/*"
+      ],
+      "@proyectointegrador/domain": [
+        "../../packages/domain/index.ts"
+      ],
+      "@proyectointegrador/domain/*": [
+        "../../packages/domain/*"
+      ],
+      "@proyectointegrador/application": [
+        "../../packages/application/index.ts"
+      ],
+      "@proyectointegrador/application/*": [
+        "../../packages/application/*"
+      ],
+      "@proyectointegrador/shared-infra": [
+        "../../packages/shared-infra/index.ts"
+      ],
+      "@proyectointegrador/shared-infra/*": [
+        "../../packages/shared-infra/*"
+      ],
+      "@proyectointegrador/design-tokens": [
+        "../../packages/design-tokens/index.ts"
+      ],
+      "@proyectointegrador/assets": [
+        "../../packages/assets/index.ts"
+      ],
+      "@proyectointegrador/assets/*": [
+        "../../packages/assets/*"
+      ]
     }
   },
   "include": [
     "**/*.ts",
     "**/*.tsx",
-    ".expo/types/**/*.ts",
-    "expo-env.d.ts"
+    ".expo/types/**/*.d.ts",
+    "expo-env.d.ts",
+    ".expo/types/**/*.ts"
   ]
 }

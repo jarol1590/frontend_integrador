@@ -1,1 +1,27 @@
-node_modules
+# dependencias
+node_modules/
+
+# builds
+.next/
+dist/
+out/
+build/
+
+# expo
+.expo/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+web-build/
+
+# env
+.env
+.env.local
+.env.production
+
+# sistema
+.DS_Store
+*.log
